@@ -1169,10 +1169,10 @@ const TRANSLATIONS = {
     toastNewEmails: n=>`${n} neue E-Mail${n!==1?'s':''} geladen`,
     toastNoNewEmails:'Keine neuen E-Mails', toastNoCreds:'Bitte App-Passwort für dieses Konto einrichten',
     fetchBtn:'↻',
-    oauthNote:`<strong>Hinweis:</strong> Für Gmail und Outlook ist ein <strong>App-Passwort</strong> erforderlich (kein normales Passwort).<br>Gmail: Google-Konto → Sicherheit → 2-Schritt-Verifizierung → App-Passwörter.<br>Outlook: account.microsoft.com → Sicherheit → App-Passwörter.`,
+    oauthNote:`<strong>Hinweis:</strong> Kein normales Passwort verwenden – ein spezielles App-Passwort ist erforderlich.<br>Gmail: Google-Konto → Sicherheit → 2-Schritt-Verifizierung → App-Passwörter.<br>iCloud: appleid.apple.com → Anmeldung und Sicherheit → Anwendungsspezifische Passwörter.<br>Outlook: account.microsoft.com → Sicherheit → App-Passwörter.`,
     providerHints:{
       gmail:'Benötigt ein Gmail App-Passwort (nicht dein normales Passwort). Einrichten unter: Google-Konto → Sicherheit → 2-Schritt-Verifizierung → App-Passwörter.',
-      icloud:'Benötigt ein Apple App-Passwort. Einrichten unter: appleid.apple.com → Anmeldung und Sicherheit → App-spezifische Passwörter.',
+      icloud:'Benötigt ein anwendungsspezifisches Passwort. Einrichten unter: appleid.apple.com → Anmeldung und Sicherheit → Anwendungsspezifische Passwörter.',
       outlook:'Benötigt ein Microsoft App-Passwort. Einrichten unter: account.microsoft.com → Sicherheit → App-Passwörter.',
       smtp:''
     },
@@ -1229,7 +1229,7 @@ const TRANSLATIONS = {
     oauthNote:`<strong>Note:</strong> Gmail and Outlook require an <strong>App Password</strong> (not your regular password).<br>Gmail: Google Account → Security → 2-Step Verification → App Passwords.<br>Outlook: account.microsoft.com → Security → App Passwords.`,
     providerHints:{
       gmail:'Requires a Gmail App Password (not your regular password). Set up at: Google Account → Security → 2-Step Verification → App Passwords.',
-      icloud:'Requires an Apple App Password. Set up at: appleid.apple.com → Sign-In and Security → App-Specific Passwords.',
+      icloud:'Requires an application-specific password. Set up at: appleid.apple.com → Sign-In and Security → App-Specific Passwords.',
       outlook:'Requires a Microsoft App Password. Set up at: account.microsoft.com → Security → App Passwords.',
       smtp:''
     },
