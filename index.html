@@ -1028,6 +1028,11 @@
           <input type="email" id="acc-email" class="acc-input" data-i18n-ph="emailPh" placeholder="name@beispiel.de">
         </div>
         <div style="grid-column:1/-1">
+          <div class="acc-label">Absendername <span style="font-style:italic;font-weight:400;color:var(--muted-light)">(optional)</span></div>
+          <input type="text" id="acc-display-name" class="acc-input" placeholder="z. B. Social-Media-Agentur JS Media">
+          <div style="margin-top:4px;font-size:11px;color:var(--muted);font-style:italic">Wenn leer, wird die E-Mail-Adresse als Absender angezeigt.</div>
+        </div>
+        <div style="grid-column:1/-1">
           <div class="acc-label" data-i18n="password">Passwort / App-Passwort</div>
           <input type="password" id="acc-pass" class="acc-input" placeholder="••••••••••••">
           <div id="acc-pass-hint" style="margin-top:5px;font-size:11px;color:var(--muted);font-family:'EB Garamond',serif;font-style:italic"></div>
@@ -2080,7 +2085,10 @@ function forwardEmail() {
 /* ---- Compose ---- */
 function populateFromSelect() {
   const sel = document.getElementById('cFrom');
-  sel.innerHTML = getAllAccounts().map(a => `<option value="${a.email}">${a.email}</option>`).join('');
+  sel.innerHTML = getAllAccounts().map(a => {
+    const label = a.displayName ? `${a.displayName} <${a.email}>` : a.email;
+    return `<option value="${a.email}">${label}</option>`;
+  }).join('');
 }
 function updateFromWarning() {
   const from = document.getElementById('cFrom').value;
@@ -2152,6 +2160,10 @@ async function sendEmail() {
   const html    = getEditorContent();
   const preview = getEditorText().slice(0, 80);
 
+  const acc = getAllAccounts().find(a => a.email === from);
+  const displayName = acc?.displayName || '';
+  const fromHeader = displayName ? `${displayName} <${from}>` : from;
+
   const creds = getAccountCreds(from);
   if (!creds?.pass) {
     toast(t('toastNoCreds'));
@@ -2172,7 +2184,7 @@ async function sendEmail() {
         smtpHost: creds.smtpHost, smtpPort: creds.smtpPort,
         smtpEnc: creds.smtpEnc || 'starttls',
         user: from, pass: creds.pass,
-        from, to, cc, subject, html,
+        from: fromHeader, to, cc, subject, html,
       })
     });
     const data = await resp.json();
@@ -2472,7 +2484,7 @@ function renderAccList() {
     <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)">
       <span style="width:9px;height:9px;border-radius:50%;background:${a.color||'#7a766f'};flex-shrink:0;display:inline-block"></span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.email}</div>
+        <div style="font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.displayName ? `<strong>${a.displayName}</strong> <span style="color:var(--muted-light)">&lt;${a.email}&gt;</span>` : a.email}</div>
         ${a.imapHost ? `<div style="font-size:11px;color:var(--muted-light);margin-top:2px">IMAP: ${a.imapHost} · SMTP: ${a.smtpHost}</div>` : ''}
       </div>
       ${statusBadge}
@@ -2599,6 +2611,7 @@ function editAccount(idx) {
   currentProvider = p;
   showAccTab('add');
   document.getElementById('acc-email').value = a.email;
+  document.getElementById('acc-display-name').value = a.displayName || '';
   document.getElementById('acc-imap-host').value = a.imapHost || '';
   document.getElementById('acc-imap-port').value = a.imapPort || 993;
   document.getElementById('acc-imap-ssl').value  = a.imapSsl  || 'ssl';
@@ -2617,9 +2630,10 @@ function addAccount() {
   const pass  = document.getElementById('acc-pass').value;
   const p = currentProvider;
   const pre = PROVIDER_PRESETS[p];
+  const displayName = document.getElementById('acc-display-name').value.trim();
   const entry = {
     id: email,
-    email, color: pre.color, label: pre.label,
+    email, displayName: displayName || '', color: pre.color, label: pre.label,
     imapHost: document.getElementById('acc-imap-host').value.trim(),
     imapPort: document.getElementById('acc-imap-port').value,
     imapSsl:  document.getElementById('acc-imap-ssl').value,
@@ -2641,6 +2655,7 @@ function addAccount() {
   _editingAccountIdx = -1;
   localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
   document.getElementById('acc-email').value = '';
+  document.getElementById('acc-display-name').value = '';
   document.getElementById('acc-pass').value = '';
   renderAccList();
   showAccTab('list');
