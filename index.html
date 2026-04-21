@@ -1079,11 +1079,11 @@
         Outlook: account.microsoft.com → Sicherheit → App-Passwörter.
       </div>
 
-      <div id="acc-test-result" style="display:none;margin-top:14px;padding:11px 14px;border-radius:10px;font-size:12.5px;line-height:1.5"></div>
+      <div id="acc-test-result" style="display:none;margin-top:14px;padding:11px 14px;border-radius:10px;font-size:12.5px;line-height:1.6"></div>
 
       <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button data-i18n="connect" onclick="addAccount()" style="padding:10px 28px;background:var(--ink);color:#fff;border:none;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;cursor:pointer">Verbinden</button>
-        <button id="acc-test-btn" onclick="testAccountConnection()" style="padding:10px 20px;background:none;border:1px solid var(--rule);border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">Verbindung testen</button>
+        <button id="acc-test-btn" onclick="testAccountConnection()" style="padding:10px 20px;background:none;border:1px solid var(--rule);border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">IMAP + SMTP testen</button>
         <button data-i18n="cancel" onclick="showAccTab('list')" style="padding:10px 18px;background:none;border:none;font-family:'Inter',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;border-radius:999px">Abbrechen</button>
       </div>
     </div>
@@ -2422,27 +2422,69 @@ async function testAccountConnection() {
   if (!c.email) { document.getElementById('acc-email').focus(); return; }
   if (!c.pass)  { document.getElementById('acc-pass').focus(); return; }
   if (!c.imapHost) { _setTestResult(false, '✗ Kein IMAP-Server angegeben.'); return; }
+  if (!c.smtpHost) { _setTestResult(false, '✗ Kein SMTP-Server angegeben.'); return; }
+
   const btn = document.getElementById('acc-test-btn');
   btn.textContent = 'Teste…'; btn.disabled = true;
-  _setTestResult(null, 'Verbinde mit ' + c.imapHost + ':' + c.imapPort + ' …');
-  try {
-    const resp = await fetch('/api/fetch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imapHost: c.imapHost, imapPort: parseInt(c.imapPort)||993, user: c.email, pass: c.pass, limit: 1 })
-    });
-    const data = await resp.json();
-    if (data.ok) {
-      const count = data.emails?.length ?? 0;
-      _setTestResult(true, '✓ Verbindung erfolgreich! ' + (count > 0 ? `${count} E-Mail(s) im Posteingang gefunden.` : 'Posteingang ist leer oder noch nicht geladen.'));
-    } else {
-      throw new Error(data.error || 'Unbekannter Fehler');
-    }
-  } catch(e) {
-    _setTestResult(false, '✗ Verbindung fehlgeschlagen:<br><code style="font-family:monospace;font-size:11.5px;word-break:break-all">' + e.message + '</code><br><br><strong>Mögliche Ursachen:</strong><br>• Falscher IMAP-Server oder Port<br>• Falsches App-Passwort (kein normales Passwort!)<br>• 2-Faktor-Auth nicht aktiviert (Gmail)<br>• IMAP in den Kontoeinstellungen nicht aktiviert');
-  } finally {
-    btn.textContent = 'Verbindung testen'; btn.disabled = false;
+  _setTestResult(null, `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div id="tr-imap" style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px">⏳</span>
+        <span>IMAP <span style="color:var(--muted-light)">${c.imapHost}:${c.imapPort}</span> — wird getestet…</span>
+      </div>
+      <div id="tr-smtp" style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px">⏳</span>
+        <span>SMTP <span style="color:var(--muted-light)">${c.smtpHost}:${c.smtpPort}</span> — wird getestet…</span>
+      </div>
+    </div>`);
+
+  function rowResult(id, ok, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = `<span style="font-size:13px">${ok ? '✅' : '❌'}</span><span>${msg}</span>`;
   }
+
+  const [imapRes, smtpRes] = await Promise.allSettled([
+    fetch('/api/fetch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imapHost: c.imapHost, imapPort: parseInt(c.imapPort)||993, user: c.email, pass: c.pass, limit: 1 })
+    }).then(r => r.json()),
+    fetch('/api/test-smtp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ smtpHost: c.smtpHost, smtpPort: parseInt(c.smtpPort)||587, smtpEnc: c.smtpEnc||'starttls', user: c.email, pass: c.pass })
+    }).then(r => r.json()),
+  ]);
+
+  const imapOk = imapRes.status === 'fulfilled' && imapRes.value?.ok;
+  const smtpOk = smtpRes.status === 'fulfilled' && smtpRes.value?.ok;
+  const imapErr = imapRes.status === 'rejected' ? imapRes.reason?.message : imapRes.value?.error;
+  const smtpErr = smtpRes.status === 'rejected' ? smtpRes.reason?.message : smtpRes.value?.error;
+
+  rowResult('tr-imap', imapOk,
+    imapOk
+      ? `IMAP <span style="color:var(--muted-light)">${c.imapHost}</span> — verbunden${imapRes.value.emails?.length ? ', ' + imapRes.value.emails.length + ' E-Mail(s)' : ''}`
+      : `IMAP fehlgeschlagen: <code style="font-family:monospace;font-size:11px;word-break:break-all">${imapErr||'Unbekannt'}</code>`
+  );
+  rowResult('tr-smtp', smtpOk,
+    smtpOk
+      ? `SMTP <span style="color:var(--muted-light)">${c.smtpHost}</span> — Authentifizierung erfolgreich`
+      : `SMTP fehlgeschlagen: <code style="font-family:monospace;font-size:11px;word-break:break-all">${smtpErr||'Unbekannt'}</code>`
+  );
+
+  const allOk = imapOk && smtpOk;
+  const el = document.getElementById('acc-test-result');
+  el.style.background = allOk ? 'rgba(34,197,94,.08)' : 'rgba(220,38,38,.07)';
+  el.style.border = allOk ? '1px solid rgba(34,197,94,.25)' : '1px solid rgba(220,38,38,.22)';
+  el.style.color = allOk ? '#15803d' : 'var(--ink-soft)';
+
+  if (!allOk) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08);font-size:11.5px;color:var(--muted)';
+    hint.innerHTML = '<strong>Mögliche Ursachen:</strong> Falsches App-Passwort · IMAP/SMTP im Konto nicht aktiviert · 2-Faktor-Auth fehlt (Gmail) · Falscher Server/Port';
+    el.appendChild(hint);
+  }
+
+  btn.textContent = 'IMAP + SMTP testen'; btn.disabled = false;
 }
 
 let _editingAccountIdx = -1;

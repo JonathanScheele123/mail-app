@@ -32,6 +32,16 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/test-smtp' && request.method === 'POST') {
+      try {
+        const data = await request.json();
+        await smtpTest(data);
+        return Response.json({ ok: true }, { headers: CORS });
+      } catch (e) {
+        return Response.json({ ok: false, error: e.message }, { status: 500, headers: CORS });
+      }
+    }
+
     const resp = await env.ASSETS.fetch(request);
     const newHeaders = new Headers(resp.headers);
     newHeaders.set('Cache-Control', 'no-store');
@@ -158,6 +168,81 @@ async function smtpSend({ smtpHost, smtpPort, smtpEnc, user, pass, from, to, cc,
 
   await writer.write(enc.encode(headers + '\r\n\r\n' + body + '\r\n.\r\n'));
   await readResponse();
+  await cmd('QUIT');
+}
+
+/* ================================================================
+   SMTP TEST (auth only, no message sent)
+   ================================================================ */
+
+async function smtpTest({ smtpHost, smtpPort, smtpEnc, user, pass }) {
+  smtpPort = parseInt(smtpPort) || 587;
+  const directTls = smtpEnc === 'ssl' || smtpPort === 465;
+  const socketOpts = directTls ? { secureTransport: 'on' } : { secureTransport: 'starttls' };
+
+  let socket = connect(`${smtpHost}:${smtpPort}`, socketOpts);
+  let reader = socket.readable.getReader();
+  let writer = socket.writable.getWriter();
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  let buf = '';
+
+  async function readLine() {
+    while (!buf.includes('\n')) {
+      const { value, done } = await reader.read();
+      if (done) throw new Error('SMTP: Verbindung unterbrochen');
+      buf += dec.decode(value);
+    }
+    const nl = buf.indexOf('\n');
+    const line = buf.slice(0, nl).replace(/\r$/, '');
+    buf = buf.slice(nl + 1);
+    return line;
+  }
+
+  async function readResponse() {
+    let line;
+    do { line = await readLine(); } while (line.length >= 4 && line[3] === '-');
+    const code = parseInt(line.slice(0, 3));
+    if (code >= 400) throw new Error(`SMTP ${code}: ${line.slice(4)}`);
+    return line;
+  }
+
+  async function cmd(c) {
+    await writer.write(enc.encode(c + '\r\n'));
+    return readResponse();
+  }
+
+  await readResponse(); // greeting
+
+  await writer.write(enc.encode('EHLO mail-app\r\n'));
+  const ehloLines = [];
+  let eLine;
+  do {
+    eLine = await readLine();
+    ehloLines.push(eLine);
+  } while (eLine.length >= 4 && eLine[3] === '-');
+  if (parseInt(eLine.slice(0, 3)) >= 400) throw new Error(`SMTP EHLO: ${eLine}`);
+
+  if (!directTls) {
+    if (ehloLines.some(l => l.toUpperCase().includes('STARTTLS'))) {
+      await cmd('STARTTLS');
+      const tlsSock = socket.startTls();
+      reader = tlsSock.readable.getReader();
+      writer = tlsSock.writable.getWriter();
+      buf = '';
+      await writer.write(enc.encode('EHLO mail-app\r\n'));
+      let l2;
+      do { l2 = await readLine(); } while (l2.length >= 4 && l2[3] === '-');
+      if (parseInt(l2.slice(0, 3)) >= 400) throw new Error(`SMTP EHLO(TLS): ${l2}`);
+    }
+  }
+
+  await cmd('AUTH LOGIN');
+  await writer.write(enc.encode(btoa(user) + '\r\n'));
+  await readResponse();
+  await writer.write(enc.encode(btoa(pass) + '\r\n'));
+  await readResponse(); // 235 = auth success, throws on failure
+
   await cmd('QUIT');
 }
 
