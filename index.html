@@ -938,6 +938,10 @@
       </select>
       <label class="tpl-btn" data-i18n="import" for="tpl-file">Importieren</label>
       <input type="file" id="tpl-file" accept=".html" style="display:none" onchange="importTemplate(this)">
+      <label class="tpl-btn" for="img-insert-file" title="Bild als Base64 einfügen">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Bild
+      </label>
+      <input type="file" id="img-insert-file" accept="image/*" style="display:none" onchange="insertImageAsBase64(this)">
       <button class="tpl-btn" data-i18n="setDefault" onclick="setDefaultTpl()">★ Standard</button>
     </div>
     <div class="ceditor">
@@ -969,8 +973,9 @@
         <select id="tpl-import-group-sel" style="width:100%;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.80);box-shadow:0 1px 0 rgba(255,255,255,.9) inset;border-radius:9px;padding:8px 12px;outline:none;cursor:pointer" onchange="onTplGroupSelChange()"></select>
         <input id="tpl-import-group-input" style="display:none;width:100%;margin-top:6px;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.80);box-shadow:0 1px 0 rgba(255,255,255,.9) inset;border-radius:9px;padding:8px 12px;outline:none" placeholder="Gruppenname…">
       </div>
+      <div id="tpl-import-img-warn" style="display:none;padding:10px 12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:9px;font-family:'Inter',sans-serif;font-size:12px;color:#92400e;line-height:1.5"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
-        <button onclick="closeTplImport()" style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.75);border-radius:999px;padding:8px 18px;cursor:pointer" data-i18n="tplImportCancel">Abbrechen</button>
+        <button onclick="closeTplImport()"style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.75);border-radius:999px;padding:8px 18px;cursor:pointer" data-i18n="tplImportCancel">Abbrechen</button>
         <button onclick="confirmTplImport()" style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.65);background-image:linear-gradient(180deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.28) 100%);border:1px solid rgba(255,255,255,.90);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 8px rgba(17,17,17,.08);border-radius:999px;padding:8px 18px;cursor:pointer" data-i18n="tplImportSave">Importieren</button>
       </div>
     </div>
@@ -2295,6 +2300,41 @@ function closeLinkPopover() {
 let _pendingImportContent = null;
 let _pendingImportInput = null;
 
+function insertImageAsBase64(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUri = ev.target.result;
+    const frame = document.getElementById('cBodyFrame');
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    const img = doc.createElement('img');
+    img.src = dataUri;
+    img.style.cssText = 'max-width:100%;height:auto;display:block';
+    const sel = frame.contentWindow.getSelection();
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      range.insertNode(img);
+      range.setStartAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      doc.body.appendChild(img);
+    }
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function _checkBrokenImages(html) {
+  const matches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)];
+  return matches.filter(m => {
+    const src = m[1];
+    return !src.startsWith('data:') && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('//');
+  }).length;
+}
+
 function importTemplate(input) {
   const file = input.files[0];
   if (!file) return;
@@ -2303,6 +2343,11 @@ function importTemplate(input) {
     _pendingImportContent = ev.target.result;
     _pendingImportInput = input;
     openTplImport(file.name.replace('.html',''));
+    const broken = _checkBrokenImages(_pendingImportContent);
+    if (broken > 0) {
+      const warn = document.getElementById('tpl-import-img-warn');
+      if (warn) { warn.textContent = `⚠ ${broken} Bild${broken>1?'er':''} mit lokalem Pfad – werden in E-Mails nicht angezeigt. Bitte als öffentliche URL oder per "Bild"-Button als Base64 einbetten.`; warn.style.display = ''; }
+    }
   };
   reader.readAsText(file);
 }
@@ -2333,6 +2378,8 @@ function onTplGroupSelChange() {
 function closeTplImport() {
   document.getElementById('tpl-import-overlay').classList.remove('open');
   _pendingImportContent = null;
+  const warn = document.getElementById('tpl-import-img-warn');
+  if (warn) warn.style.display = 'none';
   if (_pendingImportInput) { _pendingImportInput.value = ''; _pendingImportInput = null; }
 }
 
