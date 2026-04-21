@@ -1537,9 +1537,28 @@ function openEmail(id) {
   document.getElementById('pane-se').textContent = e.email;
   document.getElementById('pane-date').textContent = e.date;
   currentEmailBody = e.body;
-  // Reset to standard view when opening a new email
   document.querySelectorAll('.vtab').forEach((b,i) => b.classList.toggle('active', i===0));
   renderPaneBody('standard');
+
+  if (e._remote && e.body.includes('Volltext nicht geladen')) {
+    currentEmailBody = '<p style="font-family:Inter,sans-serif;font-size:13px;color:#7a766f;padding:24px">Lade E-Mail…</p>';
+    renderPaneBody('standard');
+    const creds = getAccountCreds(e.account);
+    if (creds?.pass && creds?.imapHost) {
+      fetch('/api/fetch-body', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imapHost: creds.imapHost, imapPort: parseInt(creds.imapPort)||993, user: e.account, pass: creds.pass, seq: e._imapSeq })
+      }).then(r => r.json()).then(data => {
+        if (data.ok && currentId == e.id) {
+          e.body = data.html;
+          e._remote = false;
+          currentEmailBody = data.html;
+          renderPaneBody('standard');
+        }
+      }).catch(() => {});
+    }
+  }
 
   const sc = e.starColor;
   const sb = document.getElementById('pane-star-btn');

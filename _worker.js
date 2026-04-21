@@ -32,6 +32,16 @@ export default {
       }
     }
 
+    if (url.pathname === '/api/fetch-body' && request.method === 'POST') {
+      try {
+        const data = await request.json();
+        const html = await imapFetchBody(data);
+        return Response.json({ ok: true, html }, { headers: CORS });
+      } catch (e) {
+        return Response.json({ ok: false, error: e.message }, { status: 500, headers: CORS });
+      }
+    }
+
     if (url.pathname === '/api/test-smtp' && request.method === 'POST') {
       try {
         const data = await request.json();
@@ -326,6 +336,112 @@ async function imapFetch({ imapHost, imapPort, user, pass, limit = 25 }) {
 
   await cmd('LOGOUT');
   return parseImapFetch(fetchResp);
+}
+
+async function imapFetchBody({ imapHost, imapPort, user, pass, seq }) {
+  imapPort = parseInt(imapPort) || 993;
+  const socket = connect(`${imapHost}:${imapPort}`, { secureTransport: 'on' });
+  const reader = socket.readable.getReader();
+  const writer = socket.writable.getWriter();
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  let buf = '';
+  let tagN = 0;
+
+  async function fillBuf(predicate) {
+    while (!predicate(buf)) {
+      const { value, done } = await reader.read();
+      if (done) throw new Error('IMAP: Verbindung unterbrochen');
+      buf += dec.decode(value);
+    }
+  }
+
+  async function cmd(command) {
+    const tag = `M${String(++tagN).padStart(3, '0')}`;
+    await writer.write(enc.encode(`${tag} ${command}\r\n`));
+    const re = new RegExp(`\\n${tag} (OK|NO|BAD)[^\\r\\n]*\\r?\\n`);
+    await fillBuf(b => re.test(b));
+    const m = buf.match(re);
+    const endIdx = buf.indexOf(m[0]) + m[0].length;
+    const result = buf.slice(0, endIdx);
+    buf = buf.slice(endIdx);
+    if (m[1] !== 'OK') throw new Error(`IMAP ${tag}: ${m[0].trim()}`);
+    return result;
+  }
+
+  await fillBuf(b => b.includes('\r\n'));
+  buf = '';
+  await cmd(`LOGIN "${escImap(user)}" "${escImap(pass)}"`);
+  await cmd('SELECT INBOX');
+  const resp = await cmd(`FETCH ${seq} (BODY.PEEK[])`);
+  await cmd('LOGOUT');
+
+  // Extract literal: BODY[] {N}\r\n<content>
+  const litM = resp.match(/BODY\[\]\s+\{(\d+)\}\r\n([\s\S]*)/);
+  if (!litM) throw new Error('Kein Body in Antwort');
+  const raw = litM[2].slice(0, parseInt(litM[1]));
+  return parseMimeBody(raw);
+}
+
+function parseMimeBody(raw) {
+  const sep = raw.indexOf('\r\n\r\n');
+  const headers = sep === -1 ? raw : raw.slice(0, sep);
+  const body    = sep === -1 ? ''  : raw.slice(sep + 4);
+
+  function hdr(name) {
+    const m = headers.match(new RegExp('^' + name + ':\\s*([^\\r\\n]+(?:\\r\\n[ \\t][^\\r\\n]*)*)', 'im'));
+    return m ? m[1].replace(/\r\n[ \t]/g, ' ').trim() : '';
+  }
+
+  const ct  = hdr('content-type') || 'text/plain';
+  const cte = hdr('content-transfer-encoding').toLowerCase() || '7bit';
+
+  if (/^multipart\//i.test(ct)) {
+    const bm = ct.match(/boundary="?([^";\r\n]+)"?/i);
+    if (!bm) return bodyToHtml(body, cte, 'text/plain');
+    const boundary = bm[1].trim();
+    const partRe = new RegExp('--' + boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:--)?\\r\\n', 'g');
+    const rawParts = body.split(new RegExp('--' + boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:--)?'));
+    let htmlPart = null, textPart = null, nested = null;
+    for (const p of rawParts) {
+      const ps = p.replace(/^\r\n/, '');
+      const psep = ps.indexOf('\r\n\r\n');
+      if (psep === -1) continue;
+      const ph = ps.slice(0, psep);
+      const pb = ps.slice(psep + 4);
+      const pct = (ph.match(/^content-type:\s*([^\r\n;]+)/im) || [])[1]?.trim().toLowerCase() || '';
+      const pcte = (ph.match(/^content-transfer-encoding:\s*([^\r\n]+)/im) || [])[1]?.trim().toLowerCase() || '7bit';
+      if (pct.startsWith('text/html')) htmlPart = { body: pb, cte: pcte };
+      else if (pct.startsWith('text/plain') && !textPart) textPart = { body: pb, cte: pcte };
+      else if (pct.startsWith('multipart/') && !nested) nested = ps;
+    }
+    if (htmlPart) return bodyToHtml(htmlPart.body, htmlPart.cte, 'text/html');
+    if (textPart) return bodyToHtml(textPart.body, textPart.cte, 'text/plain');
+    if (nested)   return parseMimeBody(nested);
+    return '<p style="color:#888;font-style:italic">Kein lesbarer Inhalt.</p>';
+  }
+
+  return bodyToHtml(body, cte, ct);
+}
+
+function bodyToHtml(body, cte, ct) {
+  let text = body;
+  try {
+    if (cte === 'base64') {
+      const clean = body.replace(/\s/g, '');
+      const bin = atob(clean);
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    } else if (cte === 'quoted-printable') {
+      text = body
+        .replace(/=\r\n/g, '')
+        .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    }
+  } catch { /* keep raw */ }
+
+  if (/text\/html/i.test(ct)) return text;
+  // plain text → wrap in styled pre
+  return `<pre style="font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;color:#2a2a2a;padding:4px 0">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
 }
 
 function escImap(s) {
