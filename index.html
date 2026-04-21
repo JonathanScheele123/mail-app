@@ -81,7 +81,7 @@
     .folder-btn { width:100%;display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);text-align:left;transition:background .12s,color .12s; }
     .folder-btn:hover { background:rgba(255,255,255,.40);color:var(--ink-soft); }
     .folder-btn.active { background:rgba(255,255,255,.55);color:var(--ink);font-weight:500; }
-    .folder-btn .fi { font-size:13px;width:16px;text-align:center;flex-shrink:0; }
+    .folder-btn .fi { width:16px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center; }
     .folder-btn .fc { margin-left:auto;font-size:10px;font-weight:600;color:var(--muted-light);background:rgba(255,255,255,.50);padding:1px 6px;border-radius:999px; }
     .sidebar-footer { border-top:1px solid rgba(255,255,255,.45);padding:10px; }
     .account-btn { width:100%;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;color:var(--muted);text-align:left;transition:background .12s; overflow:hidden; }
@@ -220,7 +220,7 @@
     .ctx-item { display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:7px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--ink-soft);border:none;background:none;width:100%;text-align:left;transition:background .1s; }
     .ctx-item:hover { background:rgba(17,17,17,.06); }
     .ctx-item.danger:hover { background:#fee2e2;color:#dc2626; }
-    .ctx-ic { font-size:13px;width:16px;text-align:center;opacity:.65;flex-shrink:0; }
+    .ctx-ic { font-size:13px;width:16px;text-align:center;opacity:.65;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center; }
     .ctx-sep { border:none;border-top:1px solid var(--rule);margin:4px 6px; }
 
     /* Custom label section in sidebar */
@@ -742,33 +742,33 @@
     <div class="sidebar-body">
       <div class="sec-label" data-i18n="folders">Ordner</div>
       <button class="folder-btn" onclick="setFolder('all',this)">
-        <span class="fi">◈</span> <span data-i18n="allMail">Alle</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span> <span data-i18n="allMail">Alle</span>
       </button>
       <button class="folder-btn active" onclick="setFolder('inbox',this)"
         ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'inbox')">
-        <span class="fi">📥</span> <span data-i18n="inbox">Posteingang</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 13 17 13 15 16 9 16 7 13 2 13"/><path d="M5.45 5.11L2 13v3a2 2 0 002 2h16a2 2 0 002-2v-3L18.55 5.11A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></span> <span data-i18n="inbox">Posteingang</span>
         <span class="fc" id="fc-inbox">4</span>
       </button>
       <button class="folder-btn" onclick="setFolder('starred',this)">
-        <span class="fi">✦</span> <span data-i18n="starred">Markiert</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> <span data-i18n="starred">Markiert</span>
       </button>
       <button class="folder-btn" onclick="setFolder('sent',this)"
         ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'sent')">
-        <span class="fi">↗</span> <span data-i18n="sent">Gesendet</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span> <span data-i18n="sent">Gesendet</span>
       </button>
       <button class="folder-btn" onclick="setFolder('drafts',this)"
         ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'drafts')">
-        <span class="fi">✏</span> <span data-i18n="drafts">Entwürfe</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span> <span data-i18n="drafts">Entwürfe</span>
         <span class="fc">1</span>
       </button>
       <button class="folder-btn" onclick="setFolder('spam',this)"
         ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'spam')">
-        <span class="fi">⚠</span> <span data-i18n="spam">Spam</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span> <span data-i18n="spam">Spam</span>
         <span class="fc" id="fc-spam">2</span>
       </button>
       <button class="folder-btn" onclick="setFolder('trash',this)"
         ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'trash')">
-        <span class="fi">🗑</span> <span data-i18n="trash">Papierkorb</span>
+        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span> <span data-i18n="trash">Papierkorb</span>
         <span class="fc" id="fc-trash" style="display:none"></span>
       </button>
 
@@ -898,7 +898,7 @@
           <button class="pac" id="btn-forward" data-i18n="forward" onclick="forwardEmail()">↪ Weiterleiten</button>
           <button class="pac" id="btn-edit-draft" data-i18n="editDraftBtn" onclick="editDraft()" style="display:none">✏ Bearbeiten</button>
           <button class="pac star-btn" id="pane-star-btn" onclick="toggleStarActive(event)">✦ Markieren</button>
-          <button class="pac danger" id="btn-delete" data-i18n="delete" onclick="deleteEmail()" style="margin-left:auto">🗑 Löschen</button>
+          <button class="pac danger" id="btn-delete" data-i18n="delete" onclick="deleteEmail()" style="margin-left:auto">Löschen</button>
         </div>
       </div>
       <div class="view-toggle">
@@ -1131,7 +1131,7 @@
   <button class="ctx-item" id="ctx-read-btn" onclick="ctxToggleRead()"><span class="ctx-ic">●</span> <span data-i18n="ctxMarkUnread">Als ungelesen markieren</span></button>
   <div id="ctx-labels-section"></div>
   <hr class="ctx-sep">
-  <button class="ctx-item danger" onclick="ctxDelete()"><span class="ctx-ic">🗑</span> <span data-i18n="ctxDelete">Löschen</span></button>
+  <button class="ctx-item danger" onclick="ctxDelete()"><span class="ctx-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></span> <span data-i18n="ctxDelete">Löschen</span></button>
 </div>
 
 <!-- Link edit popover -->
@@ -1152,13 +1152,13 @@ const TRANSLATIONS = {
     searchPh:'Suchen…', filterAll:'Alle', filterUnread:'Ungelesen', filterStarred:'Markiert',
     noEmails:'Keine E-Mails vorhanden.', selectEmail:'Wähle eine E-Mail aus',
     back:'← Zurück', reply:'↩ Antworten', forward:'↪ Weiterleiten',
-    editDraftBtn:'✏ Bearbeiten', mark:'✦ Markieren', marked:'✦ Markiert',
-    delete:'🗑 Löschen', deletePermanently:'🗑 Endgültig löschen',
+    editDraftBtn:'Bearbeiten', mark:'Markieren', marked:'Markiert',
+    delete:'Löschen', deletePermanently:'Endgültig löschen',
     viewStandard:'Standard', viewAdapted:'Angepasst', viewFullscreen:'Vollbild',
     composeTitle:'Neue E-Mail', from:'Von', to:'An', cc:'CC', subjectLabel:'Betreff',
     toPh:'empfänger@beispiel.de', subjectPh:'Betreff…', template:'Vorlage',
     noTemplate:'Kein Template', import:'Importieren', setDefault:'★ Standard',
-    send:'Senden', saveDraftBtn:'✏ Als Entwurf speichern', discard:'Verwerfen',
+    send:'Senden', saveDraftBtn:'Als Entwurf speichern', discard:'Verwerfen',
     accountsTitle:'E-Mail-Konten', myAccounts:'Meine Konten',
     addAccountTab:'+ Konto hinzufügen', noAccountsConfigured:'Noch keine Konten konfiguriert.',
     provider:'Anbieter', customServer:'Eigener Server', emailAddress:'E-Mail-Adresse',
@@ -1209,13 +1209,13 @@ const TRANSLATIONS = {
     searchPh:'Search…', filterAll:'All', filterUnread:'Unread', filterStarred:'Starred',
     noEmails:'No emails.', selectEmail:'Select an email',
     back:'← Back', reply:'↩ Reply', forward:'↪ Forward',
-    editDraftBtn:'✏ Edit', mark:'✦ Mark', marked:'✦ Marked',
-    delete:'🗑 Delete', deletePermanently:'🗑 Delete permanently',
+    editDraftBtn:'Edit', mark:'Mark', marked:'Marked',
+    delete:'Delete', deletePermanently:'Delete permanently',
     viewStandard:'Standard', viewAdapted:'Adapted', viewFullscreen:'Fullscreen',
     composeTitle:'New Email', from:'From', to:'To', cc:'CC', subjectLabel:'Subject',
     toPh:'recipient@example.com', subjectPh:'Subject…', template:'Template',
     noTemplate:'No Template', import:'Import', setDefault:'★ Default',
-    send:'Send', saveDraftBtn:'✏ Save as Draft', discard:'Discard',
+    send:'Send', saveDraftBtn:'Save as Draft', discard:'Discard',
     accountsTitle:'Email Accounts', myAccounts:'My Accounts',
     addAccountTab:'+ Add Account', noAccountsConfigured:'No accounts configured yet.',
     provider:'Provider', customServer:'Custom Server', emailAddress:'Email Address',
