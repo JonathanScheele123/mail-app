@@ -572,9 +572,96 @@
       from { opacity:0; }
       to   { opacity:1; }
     }
+
+    /* --- Auth overlay --- */
+    #auth-overlay {
+      position:fixed;inset:0;z-index:500;
+      display:flex;align-items:center;justify-content:center;padding:20px;
+      opacity:1;transition:opacity .35s ease;
+    }
+    #auth-overlay.hidden { opacity:0;pointer-events:none; }
+    .auth-card { width:380px;max-width:100%; }
+    .auth-logo { display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px; }
+    .auth-logo svg { width:44px;height:44px;filter:drop-shadow(0 4px 12px rgba(41,42,145,.18)); }
+    .auth-logo-name { font-family:'EB Garamond',serif;font-size:24px;font-weight:500;letter-spacing:-.01em; }
+    .auth-tabs { display:flex;margin-bottom:22px;background:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.65);border-radius:999px;padding:3px; }
+    .auth-tab { flex:1;padding:7px 0;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-radius:999px;cursor:pointer;transition:all .15s; }
+    .auth-tab.active { background:rgba(255,255,255,.72);color:var(--ink);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 8px rgba(17,17,17,.08); }
+    .auth-field { margin-bottom:12px; }
+    .auth-label { font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px; }
+    .auth-input { width:100%;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.80);box-shadow:0 1px 0 rgba(255,255,255,.9) inset;border-radius:10px;padding:9px 13px;outline:none;transition:border-color .15s,box-shadow .15s; }
+    .auth-input:focus { border-color:rgba(139,92,246,.35);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 0 0 3px rgba(139,92,246,.12); }
+    .auth-btn { width:100%;margin-top:8px;padding:11px 16px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.65);background-image:linear-gradient(180deg,rgba(255,255,255,.80) 0%,rgba(255,255,255,.32) 100%);border:1px solid rgba(255,255,255,.90);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 8px rgba(17,17,17,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:999px;cursor:pointer;transition:box-shadow .15s,background .15s; }
+    .auth-btn:hover { box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 4px 16px rgba(17,17,17,.13); }
+    .auth-error { font-family:'Inter',sans-serif;font-size:12px;color:#dc2626;background:rgba(254,226,226,.65);border:1px solid rgba(252,165,165,.55);border-radius:8px;padding:8px 12px;margin-bottom:12px;display:none; }
+    .auth-error.show { display:block; }
+    /* Logged-in user row in sidebar */
+    .auth-user-row { display:flex;align-items:center;gap:8px;padding:6px 10px 2px;margin-bottom:2px; }
+    .auth-user-avatar { width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,rgba(139,92,246,.6),rgba(236,72,153,.5));display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',serif;font-size:13px;font-weight:500;color:#fff;flex-shrink:0; }
+    .auth-user-info { flex:1;overflow:hidden; }
+    .auth-user-name { font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .auth-user-email { font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .auth-logout-btn { font-family:'Inter',sans-serif;font-size:10px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 4px;opacity:.7;transition:opacity .12s;flex-shrink:0; }
+    .auth-logout-btn:hover { opacity:1;color:#dc2626; }
   </style>
 </head>
 <body>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay" class="hidden">
+  <div class="auth-card glass" style="padding:36px 32px 28px">
+    <div class="auth-logo">
+      <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M120 8 C192 8,232 48,232 120 C232 192,192 232,120 232 C48 232,8 192,8 120 C8 48,48 8,120 8 Z" fill="#111111"/>
+        <g transform="translate(58 60)">
+          <path d="M0 62 L124 6 L76 70 L94 94 L40 74 Z" fill="#ffffff"/>
+          <path d="M0 62 L76 70 L94 94" stroke="#111111" stroke-opacity=".20" stroke-width="1.5" fill="none"/>
+          <path d="M76 70 L124 6" stroke="#111111" stroke-opacity=".12" stroke-width="1" fill="none"/>
+        </g>
+      </svg>
+      <span class="auth-logo-name">Mail</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">Anmelden</button>
+      <button class="auth-tab" id="auth-tab-register" onclick="switchAuthTab('register')">Registrieren</button>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <!-- Login -->
+    <div id="auth-form-login">
+      <div class="auth-field">
+        <label class="auth-label">E-Mail</label>
+        <input id="auth-login-email" class="auth-input" type="email" placeholder="name@beispiel.de" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Passwort</label>
+        <input id="auth-login-pass" class="auth-input" type="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Anmelden</button>
+    </div>
+    <!-- Register -->
+    <div id="auth-form-register" style="display:none">
+      <div class="auth-field">
+        <label class="auth-label">Name</label>
+        <input id="auth-reg-name" class="auth-input" type="text" placeholder="Dein Name" autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">E-Mail</label>
+        <input id="auth-reg-email" class="auth-input" type="email" placeholder="name@beispiel.de" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Passwort</label>
+        <input id="auth-reg-pass" class="auth-input" type="password" placeholder="Mindestens 6 Zeichen" autocomplete="new-password">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Passwort wiederholen</label>
+        <input id="auth-reg-pass2" class="auth-input" type="password" placeholder="••••••••" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="auth-btn" onclick="doRegister()">Registrieren</button>
+    </div>
+  </div>
+</div>
 
 <!-- Splash Screen -->
 <div id="splash">
@@ -677,6 +764,14 @@
         <span style="font-size:12px;color:var(--muted-light)">＋</span>
         <span data-i18n="addAccount" style="color:var(--muted-light)">Konto hinzufügen</span>
       </button>
+      <div class="auth-user-row" id="auth-user-row" style="display:none">
+        <div class="auth-user-avatar" id="auth-user-avatar">J</div>
+        <div class="auth-user-info">
+          <div class="auth-user-name" id="auth-user-name">–</div>
+          <div class="auth-user-email" id="auth-user-email">–</div>
+        </div>
+        <button class="auth-logout-btn" onclick="logoutUser()" title="Abmelden">⏻</button>
+      </div>
       <div class="lang-toggle">
         <button class="lang-seg active" id="lang-de" onclick="setLang('de')">DE</button>
         <span style="color:var(--muted-light);font-size:9px;opacity:.5">·</span>
@@ -2255,7 +2350,90 @@ function closeMobilePane() {
   }, { passive: true });
 })();
 
+/* ---- Auth ---- */
+function getUsers() { return JSON.parse(localStorage.getItem('jm-users') || '[]'); }
+function saveUsers(u) { localStorage.setItem('jm-users', JSON.stringify(u)); }
+function getSession() { return JSON.parse(localStorage.getItem('jm-session') || 'null'); }
+function setSession(u) { localStorage.setItem('jm-session', JSON.stringify(u)); }
+function clearSession() { localStorage.removeItem('jm-session'); }
+
+function initAuth() {
+  const s = getSession();
+  if (s) {
+    document.getElementById('auth-overlay').classList.add('hidden');
+    updateUserDisplay(s);
+  } else {
+    document.getElementById('auth-overlay').classList.remove('hidden');
+  }
+}
+
+function updateUserDisplay(user) {
+  const row = document.getElementById('auth-user-row');
+  if (!row) return;
+  row.style.display = '';
+  document.getElementById('auth-user-name').textContent = user.name || user.email;
+  document.getElementById('auth-user-email').textContent = user.email;
+  const av = document.getElementById('auth-user-avatar');
+  av.textContent = (user.name || user.email).charAt(0).toUpperCase();
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('auth-tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('auth-tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('auth-form-login').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('auth-form-register').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function doLogin() {
+  const email = document.getElementById('auth-login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('auth-login-pass').value;
+  if (!email || !pass) { showAuthError('Bitte alle Felder ausfüllen.'); return; }
+  const user = getUsers().find(u => u.email === email && u.password === pass);
+  if (!user) { showAuthError('E-Mail oder Passwort falsch.'); return; }
+  setSession(user);
+  document.getElementById('auth-overlay').classList.add('hidden');
+  updateUserDisplay(user);
+}
+
+function doRegister() {
+  const name  = document.getElementById('auth-reg-name').value.trim();
+  const email = document.getElementById('auth-reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('auth-reg-pass').value;
+  const pass2 = document.getElementById('auth-reg-pass2').value;
+  if (!name || !email || !pass || !pass2) { showAuthError('Bitte alle Felder ausfüllen.'); return; }
+  if (pass.length < 6) { showAuthError('Passwort muss mindestens 6 Zeichen haben.'); return; }
+  if (pass !== pass2) { showAuthError('Passwörter stimmen nicht überein.'); return; }
+  const users = getUsers();
+  if (users.find(u => u.email === email)) { showAuthError('Diese E-Mail ist bereits registriert.'); return; }
+  const newUser = { name, email, password: pass };
+  users.push(newUser);
+  saveUsers(users);
+  setSession(newUser);
+  document.getElementById('auth-overlay').classList.add('hidden');
+  updateUserDisplay(newUser);
+  toast('Willkommen, ' + name + '! ✓');
+}
+
+function logoutUser() {
+  clearSession();
+  document.getElementById('auth-user-row').style.display = 'none';
+  document.getElementById('auth-login-email').value = '';
+  document.getElementById('auth-login-pass').value = '';
+  document.getElementById('auth-error').classList.remove('show');
+  switchAuthTab('login');
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('auth-login-email').focus(), 100);
+}
+
 /* ---- Init ---- */
+initAuth();
 renderList();
 applyLang();
 
