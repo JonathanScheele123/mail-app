@@ -1596,29 +1596,60 @@ function setViewMode(mode, btn) {
   renderPaneBody(mode);
 }
 
+function isHtmlBody(body) {
+  return /<(html|body|table|div|p|span|img|td|tr)\b/i.test(body);
+}
+
 function renderPaneBody(mode) {
   const pane = document.getElementById('pane-body');
   pane.className = 'pane-body';
-  if (mode === 'standard') {
+  const isHtml = isHtmlBody(currentEmailBody);
+
+  if (mode === 'standard' && !isHtml) {
     pane.innerHTML = currentEmailBody;
     return;
   }
-  // Adapted: render in iframe, scale to fit container width
+
+  // Always use iframe for HTML email bodies to isolate CSS/images
   pane.classList.add('mode-adapted');
   pane.innerHTML = '';
   const frame = document.createElement('iframe');
+  frame.setAttribute('sandbox', 'allow-same-origin allow-popups');
   pane.appendChild(frame);
-  frame.srcdoc = currentEmailBody;
+
+  // Inject base font style if the email has no <html> wrapper
+  const srcdoc = isHtml ? currentEmailBody
+    : `<html><head><style>body{margin:0;padding:16px 20px;font-family:'Inter',sans-serif;font-size:14px;line-height:1.75;color:#2a2a2a;word-break:break-word}</style></head><body>${currentEmailBody}</body></html>`;
+  frame.srcdoc = srcdoc;
+
+  function resize() {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc) return;
+      const nh = doc.documentElement.scrollHeight || doc.body?.scrollHeight || 400;
+      const nw = doc.documentElement.scrollWidth  || doc.body?.scrollWidth  || pane.offsetWidth;
+      const cw = pane.offsetWidth || nw;
+      const scale = (mode === 'adapted' && nw > cw) ? cw / nw : 1;
+      frame.style.width  = (scale < 1 ? nw : cw) + 'px';
+      frame.style.height = nh + 'px';
+      frame.style.transform = scale < 1 ? `scale(${scale})` : '';
+      frame.style.transformOrigin = 'top left';
+      pane.style.height = (nh * scale) + 'px';
+    } catch {}
+  }
+
   frame.onload = () => {
-    const doc = frame.contentDocument;
-    const nw = doc.documentElement.scrollWidth;
-    const nh = doc.documentElement.scrollHeight;
-    const cw = pane.offsetWidth;
-    const scale = nw > cw ? cw / nw : 1;
-    frame.style.width = nw + 'px';
-    frame.style.height = nh + 'px';
-    frame.style.transform = `scale(${scale})`;
-    pane.style.height = (nh * scale) + 'px';
+    resize();
+    // Re-measure after images load
+    try {
+      const imgs = frame.contentDocument.querySelectorAll('img');
+      let pending = imgs.length;
+      if (!pending) return;
+      imgs.forEach(img => {
+        if (img.complete) { if (!--pending) resize(); }
+        else { img.onload = img.onerror = () => { if (!--pending) resize(); }; }
+      });
+    } catch {}
   };
 }
 
