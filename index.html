@@ -834,9 +834,14 @@
         <div class="list-title" id="list-title" style="margin-bottom:0" data-i18n="inbox">Posteingang</div>
         <button id="empty-trash-btn" data-i18n="emptyTrash" onclick="emptyTrash()" style="display:none;padding:5px 13px;font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#dc2626;background:rgba(254,226,226,.55);border:1px solid rgba(252,165,165,.55);border-radius:999px;cursor:pointer;backdrop-filter:blur(12px);transition:background .12s">Leeren</button>
       </div>
-      <div class="search-wrap">
-        <span class="search-ic">⌕</span>
-        <input type="text" data-i18n-ph="searchPh" placeholder="Suchen…" oninput="filterEmails(this.value)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div class="search-wrap" style="margin-bottom:0;flex:1">
+          <span class="search-ic">⌕</span>
+          <input type="text" data-i18n-ph="searchPh" placeholder="Suchen…" oninput="filterEmails(this.value)">
+        </div>
+        <button id="refresh-btn" onclick="startFetchEmails()" title="E-Mails abrufen"
+          style="padding:7px 11px;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.75);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 2px 8px rgba(17,17,17,.05);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:10px;cursor:pointer;font-size:15px;color:var(--muted);transition:background .12s,color .12s,transform .22s;flex-shrink:0"
+          onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--muted)'">↻</button>
       </div>
     </div>
     <!-- Labels row: shown above main tabs, only when categories exist -->
@@ -1181,6 +1186,10 @@ const TRANSLATIONS = {
     toastDefaultNoTpl:'Standard: Kein Template.', toastDefaultTplSet:'Standard-Vorlage gesetzt ★',
     toastTplImported: n=>`Vorlage importiert: ${n}`,
     toastAccountConnected: e=>`${e} erfolgreich verbunden ✓`,
+    sending:'Senden…', fetching:'E-Mails werden abgerufen…',
+    toastNewEmails: n=>`${n} neue E-Mail${n!==1?'s':''} geladen`,
+    toastNoNewEmails:'Keine neuen E-Mails', toastNoCreds:'Bitte App-Passwort für dieses Konto einrichten',
+    fetchBtn:'↻',
     oauthNote:`<strong>Hinweis:</strong> Für Gmail und Outlook ist ein <strong>App-Passwort</strong> erforderlich (kein normales Passwort).<br>Gmail: Google-Konto → Sicherheit → 2-Schritt-Verifizierung → App-Passwörter.<br>Outlook: account.microsoft.com → Sicherheit → App-Passwörter.`,
     providerHints:{
       gmail:'Benötigt ein Gmail App-Passwort (nicht dein normales Passwort). Einrichten unter: Google-Konto → Sicherheit → 2-Schritt-Verifizierung → App-Passwörter.',
@@ -1234,6 +1243,10 @@ const TRANSLATIONS = {
     toastDefaultNoTpl:'Default: No Template.', toastDefaultTplSet:'Default template set ★',
     toastTplImported: n=>`Template imported: ${n}`,
     toastAccountConnected: e=>`${e} connected successfully ✓`,
+    sending:'Sending…', fetching:'Fetching emails…',
+    toastNewEmails: n=>`${n} new email${n!==1?'s':''} loaded`,
+    toastNoNewEmails:'No new emails', toastNoCreds:'Please set an App Password for this account',
+    fetchBtn:'↻',
     oauthNote:`<strong>Note:</strong> Gmail and Outlook require an <strong>App Password</strong> (not your regular password).<br>Gmail: Google Account → Security → 2-Step Verification → App Passwords.<br>Outlook: account.microsoft.com → Security → App Passwords.`,
     providerHints:{
       gmail:'Requires a Gmail App Password (not your regular password). Set up at: Google Account → Security → 2-Step Verification → App Passwords.',
@@ -1488,6 +1501,15 @@ function renderList() {
   }).join('');
   renderSidebarLabels();
   renderCustomTabs();
+  // Folder badges
+  const inboxUnread = emails.filter(e => e.folder === 'inbox' && e.unread).length;
+  const fcInbox = document.getElementById('fc-inbox');
+  fcInbox.textContent = inboxUnread || '';
+  fcInbox.style.display = inboxUnread ? '' : 'none';
+  const spamCount = emails.filter(e => e.folder === 'spam').length;
+  const fcSpam = document.getElementById('fc-spam');
+  fcSpam.textContent = spamCount || '';
+  fcSpam.style.display = spamCount ? '' : 'none';
   // Trash badge
   const trashCount = emails.filter(e => e.folder === 'trash').length;
   const fcTrash = document.getElementById('fc-trash');
@@ -2053,25 +2075,58 @@ function getEditorText() {
   const frame = document.getElementById('cBodyFrame');
   try { return frame.contentDocument.body.innerText || ''; } catch(e) { return ''; }
 }
-function sendEmail() {
+async function sendEmail() {
   const to = document.getElementById('cTo').value.trim();
   if (!to) { document.getElementById('cTo').focus(); return; }
-  const from = document.getElementById('cFrom').value;
+  const from    = document.getElementById('cFrom').value;
+  const cc      = document.getElementById('cCc').value.trim();
   const subject = document.getElementById('cSubject').value.trim();
-  const html = getEditorContent();
+  const html    = getEditorContent();
   const preview = getEditorText().slice(0, 80);
-  const now = new Date();
-  emails.push({
-    id: Date.now(), folder:'sent', starColor:null, unread:false,
-    from:t('me'), email: from,
-    account: from.includes('icloud') ? 'apple' : 'work',
-    subject: subject || t('noSubject'),
-    preview,
-    date: t('today') + ', ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0'),
-    body: html
-  });
-  if (currentDraftId) { emails = emails.filter(e => e.id !== currentDraftId); }
-  save(); closeCompose(); toast(t('toastEmailSent'));
+
+  const creds = getAccountCreds(from);
+  if (!creds?.pass) {
+    toast(t('toastNoCreds'));
+    closeCompose();
+    openAccounts(); showAccTab('add');
+    document.getElementById('acc-email').value = from;
+    return;
+  }
+
+  const sendBtn = document.querySelector('.send-btn');
+  sendBtn.textContent = t('sending');
+  sendBtn.disabled = true;
+  try {
+    const resp = await fetch('/api/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        smtpHost: creds.smtpHost, smtpPort: creds.smtpPort,
+        smtpEnc: creds.smtpEnc || 'starttls',
+        user: from, pass: creds.pass,
+        from, to, cc, subject, html,
+      })
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Unbekannter Fehler');
+
+    const now = new Date();
+    const date = t('today') + ', ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    emails.push({
+      id: Date.now(), folder:'sent', starColor:null, unread:false,
+      from: t('me'), email: from,
+      account: from.includes('icloud') ? 'apple' : 'work',
+      subject: subject || t('noSubject'),
+      preview, date, body: html
+    });
+    if (currentDraftId) emails = emails.filter(e => e.id !== currentDraftId);
+    save(); closeCompose(); toast(t('toastEmailSent'));
+  } catch(e) {
+    toast('Sendefehler: ' + e.message);
+  } finally {
+    sendBtn.textContent = t('send');
+    sendBtn.disabled = false;
+  }
 }
 
 /* ---- Templates ---- */
@@ -2294,19 +2349,28 @@ function renderAccList() {
 function addAccount() {
   const email = document.getElementById('acc-email').value.trim();
   if (!email) { document.getElementById('acc-email').focus(); return; }
+  const pass  = document.getElementById('acc-pass').value;
   const p = currentProvider;
   const pre = PROVIDER_PRESETS[p];
-  const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
-  saved.push({
+  const entry = {
     email, color: pre.color, label: pre.label,
     imapHost: document.getElementById('acc-imap-host').value.trim(),
     imapPort: document.getElementById('acc-imap-port').value,
     imapSsl:  document.getElementById('acc-imap-ssl').value,
     smtpHost: document.getElementById('acc-smtp-host').value.trim(),
     smtpPort: document.getElementById('acc-smtp-port').value,
-    smtpEnc:  document.getElementById('acc-smtp-enc').value
-  });
-  localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
+    smtpEnc:  document.getElementById('acc-smtp-enc').value,
+  };
+  // Save credentials (incl. pass) separately, keyed by email
+  saveAccountCreds(email, { ...entry, pass });
+  // Only add to account list if not a base account
+  const isBase = ACCOUNTS_BASE.some(a => a.email === email);
+  if (!isBase) {
+    const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
+    const idx = saved.findIndex(a => a.email === email);
+    if (idx >= 0) saved[idx] = entry; else saved.push(entry);
+    localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
+  }
   document.getElementById('acc-email').value = '';
   document.getElementById('acc-pass').value = '';
   renderAccList();
@@ -2320,6 +2384,91 @@ function removeAccount(idx) {
   localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
   renderAccList();
   toast(t('toastAccountRemoved'));
+}
+
+/* ---- Account credentials (stored separately, keyed by email) ---- */
+function saveAccountCreds(email, creds) {
+  const all = JSON.parse(localStorage.getItem(uk('jm-creds')) || '{}');
+  all[email] = creds;
+  localStorage.setItem(uk('jm-creds'), JSON.stringify(all));
+}
+function getAccountCreds(email) {
+  const all = JSON.parse(localStorage.getItem(uk('jm-creds')) || '{}');
+  if (all[email]) return all[email];
+  // Fall back to jm-accounts entry
+  const accs = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
+  const acc = accs.find(a => a.email === email);
+  if (acc) return acc;
+  // Fall back to ACCOUNTS_BASE config (no pass)
+  const base = ACCOUNTS_BASE.find(a => a.email === email);
+  return base ? { ...base, pass: null } : null;
+}
+
+/* ---- Fetch emails from IMAP ---- */
+let _fetching = false;
+async function startFetchEmails() {
+  if (_fetching) return;
+  _fetching = true;
+  const btn = document.getElementById('refresh-btn');
+  if (btn) { btn.style.transform = 'rotate(360deg)'; btn.style.color = 'var(--ink)'; }
+  toast(t('fetching'));
+  try { await fetchEmails(); }
+  catch(e) { toast('Fehler: ' + e.message); }
+  finally {
+    _fetching = false;
+    if (btn) { btn.style.transform = ''; btn.style.color = ''; }
+  }
+}
+
+async function fetchEmails() {
+  const allAccounts = [
+    ...ACCOUNTS_BASE,
+    ...(JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]'))
+  ];
+  let newCount = 0;
+  let fetched = false;
+
+  for (const acc of allAccounts) {
+    const creds = getAccountCreds(acc.email);
+    if (!creds?.pass || !creds?.imapHost) continue;
+    try {
+      const resp = await fetch('/api/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imapHost: creds.imapHost,
+          imapPort: creds.imapPort || 993,
+          user: acc.email,
+          pass: creds.pass,
+          limit: 25,
+        })
+      });
+      const data = await resp.json();
+      if (!data.ok) { console.warn('IMAP error', acc.email, data.error); continue; }
+      fetched = true;
+      for (const e of data.emails) {
+        const dup = emails.some(x =>
+          (e._msgId && x._msgId === e._msgId) ||
+          (!e._msgId && x.subject === e.subject && x.from === e.from && x.date === e.date)
+        );
+        if (dup) continue;
+        // Match account color
+        const base = ACCOUNTS_BASE.find(a => a.email === acc.email);
+        e.account = base ? base.id : 'work';
+        emails.unshift(e);
+        newCount++;
+      }
+    } catch(err) { console.warn('Fetch error', acc.email, err); }
+  }
+
+  if (fetched) {
+    save(); renderList();
+    toast(newCount > 0 ? t('toastNewEmails')(newCount) : t('toastNoNewEmails'));
+  } else {
+    toast(t('toastNoCreds'));
+    // Open accounts config so user can set password
+    openAccounts(); showAccTab('add');
+  }
 }
 
 /* ---- Keyboard shortcut: Esc closes modals ---- */
@@ -2389,11 +2538,10 @@ function closeMobilePane() {
       wrap.classList.add('refreshing');
       document.getElementById('ptr-label').textContent = t('ptrRefreshing');
       spinner.style.transform = '';
-      setTimeout(() => {
-        renderList();
+      fetchEmails().finally(() => {
         wrap.classList.remove('visible', 'refreshing');
         spinner.style.transform = '';
-      }, 900);
+      });
     } else {
       wrap.classList.remove('visible');
       spinner.style.transform = '';
@@ -2515,7 +2663,7 @@ function logoutUser() {
 
 function deleteAccount() {
   if (!confirm('Alle deine Daten (E-Mails, Vorlagen, Einstellungen) werden unwiderruflich gelöscht. Fortfahren?')) return;
-  ['jm-emails','jm-templates','jm-categories','jm-default-tpl','jm-accounts'].forEach(k => localStorage.removeItem(uk(k)));
+  ['jm-emails','jm-templates','jm-categories','jm-default-tpl','jm-accounts','jm-creds'].forEach(k => localStorage.removeItem(uk(k)));
   const users = getUsers().filter(u => u.email !== currentUserEmail);
   saveUsers(users);
   clearSession();
