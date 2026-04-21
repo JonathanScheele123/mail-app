@@ -1,2 +1,5 @@
 name = "mail-app"
-pages_build_output_dir = "."
+compatibility_date = "2026-04-21"
+
+[assets]
+directory = "."
