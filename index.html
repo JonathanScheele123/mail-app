@@ -1475,10 +1475,10 @@ function renderList() {
     }).join('');
     return `<div class="erow${e.unread?' unread':''}${currentId===e.id?' active':''}"
       ${sc?`data-star="${sc}"`:''}
-      onclick="openEmail(${e.id})"
-      oncontextmenu="showCtxMenu(event,${e.id})"
+      onclick="openEmail('${e.id}')"
+      oncontextmenu="showCtxMenu(event,'${e.id}')"
       draggable="true"
-      ondragstart="onDragStart(event,${e.id})"
+      ondragstart="onDragStart(event,'${e.id}')"
       ondragend="onDragEnd(event)"
       data-id="${e.id}">
       <div class="erow-top">
@@ -1490,7 +1490,7 @@ function renderList() {
         ${acc?`<span class="abadge" style="background:${acc.color}">${acc.label}</span>`:''}
         ${chips}
         <span class="epreview">${e.preview}</span>
-        <button class="star-btn" style="${starStyle}" onclick="openColorPicker(event,${e.id})" title="Markieren">✦</button>
+        <button class="star-btn" style="${starStyle}" onclick="openColorPicker(event,'${e.id}')" title="Markieren">✦</button>
       </div>
     </div>`;
   }).join('');
@@ -1517,7 +1517,7 @@ function renderList() {
 
 /* ---- Open email ---- */
 function openEmail(id) {
-  const e = emails.find(x => x.id === id);
+  const e = emails.find(x => x.id == id || x.id === id);
   if (!e) return;
   currentId = id;
   e.unread = false;
@@ -1645,7 +1645,7 @@ let colorPickerTargetId = null;
 function openColorPicker(ev, id) {
   ev.stopPropagation();
   colorPickerTargetId = id;
-  const e = emails.find(x=>x.id===id);
+  const e = emails.find(x=>x.id==id);
   const cp = document.getElementById('color-picker');
   cp.querySelectorAll('.cpick').forEach(d => d.classList.toggle('active', d.dataset.c === (e.starColor||'')));
   const rect = ev.target.getBoundingClientRect();
@@ -1654,7 +1654,7 @@ function openColorPicker(ev, id) {
   cp.classList.add('show');
 }
 function pickColor(color) {
-  const e = emails.find(x=>x.id===colorPickerTargetId);
+  const e = emails.find(x=>x.id==colorPickerTargetId);
   if (e) { e.starColor = color || null; save(); }
   document.getElementById('color-picker').classList.remove('show');
   if (currentId === colorPickerTargetId) openEmail(colorPickerTargetId);
@@ -1858,7 +1858,7 @@ let ctxId = null;
 function showCtxMenu(ev, id) {
   ev.preventDefault();
   ctxId = id;
-  const e = emails.find(x=>x.id===id);
+  const e = emails.find(x=>x.id==id);
   const menu = document.getElementById('ctx-menu');
   document.getElementById('ctx-read-btn').querySelector('[data-i18n]').textContent = e.unread ? t('ctxMarkRead') : t('ctxMarkUnread');
   // Labels section
