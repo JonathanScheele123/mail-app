@@ -136,21 +136,32 @@
 
     .filter-tabs { display:flex;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.55); }
     /* Account filter pills (shown in 'Alle' folder) */
-    .acc-filter-row { display:flex;align-items:center;gap:5px;padding:7px 14px 6px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.40); }
-    .acc-pill {
+    .acc-filter-row { display:none; }
+    .acc-pill { display:none; }
+    /* Sidebar account pills */
+    .sb-pills { display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px 6px; }
+    .sb-pill {
       display:inline-flex;align-items:center;gap:5px;
       font-family:'Inter',sans-serif;font-size:11px;font-weight:500;
-      padding:4px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;
-      background:rgba(255,255,255,.40);border:1px solid rgba(255,255,255,.65);
-      color:var(--muted);transition:all .15s;
+      padding:4px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;
+      background:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.60);
+      color:var(--muted);transition:all .18s;
     }
-    .acc-pill:hover { background:rgba(255,255,255,.62);color:var(--ink-soft); }
-    .acc-pill.active {
-      background:rgba(17,17,17,.08);border-color:rgba(17,17,17,.18);
-      color:var(--ink);font-weight:600;
-      box-shadow:0 0 0 2px rgba(139,92,246,.22),0 2px 12px rgba(139,92,246,.18);
+    .sb-pill:hover { background:rgba(255,255,255,.60);color:var(--ink-soft); }
+    .sb-pill.active { color:var(--ink);font-weight:600;background:rgba(255,255,255,.22); }
+    .sb-pill .adot2 { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+    /* Sidebar folder sections */
+    .fsec { margin-bottom:2px; }
+    .fsec-head {
+      display:flex;align-items:center;gap:6px;padding:5px 12px 3px;cursor:pointer;
+      font-family:'Inter',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.13em;
+      text-transform:uppercase;color:var(--muted);user-select:none;
     }
-    .acc-pill .adot2 { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+    .fsec-head:hover { color:var(--ink-soft); }
+    .fsec-adot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+    .fsec-chevron { margin-left:auto;transition:transform .18s;flex-shrink:0; }
+    .fsec.collapsed .fsec-chevron { transform:rotate(-90deg); }
+    .fsec.collapsed .fsec-body { display:none; }
     .ftab { font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:9px 10px 7px;cursor:pointer;transition:color .15s,border-color .15s;margin-bottom:-1px; }
     .ftab:hover { color:var(--ink-soft); }
     .ftab.active { color:var(--ink);border-bottom-color:var(--ink); }
@@ -740,49 +751,13 @@
     </div>
 
     <div class="sidebar-body">
-      <div class="sec-label" data-i18n="folders">Ordner</div>
-      <button class="folder-btn" onclick="setFolder('all',this)">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span> <span data-i18n="allMail">Alle</span>
-      </button>
-      <button class="folder-btn active" onclick="setFolder('inbox',this)"
-        ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'inbox')">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 13 17 13 15 16 9 16 7 13 2 13"/><path d="M5.45 5.11L2 13v3a2 2 0 002 2h16a2 2 0 002-2v-3L18.55 5.11A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg></span> <span data-i18n="inbox">Posteingang</span>
-        <span class="fc" id="fc-inbox">4</span>
-      </button>
-      <button class="folder-btn" onclick="setFolder('starred',this)">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> <span data-i18n="starred">Markiert</span>
-      </button>
-      <button class="folder-btn" onclick="setFolder('sent',this)"
-        ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'sent')">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span> <span data-i18n="sent">Gesendet</span>
-      </button>
-      <button class="folder-btn" onclick="setFolder('drafts',this)"
-        ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'drafts')">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span> <span data-i18n="drafts">Entwürfe</span>
-        <span class="fc">1</span>
-      </button>
-      <button class="folder-btn" onclick="setFolder('spam',this)"
-        ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'spam')">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span> <span data-i18n="spam">Spam</span>
-        <span class="fc" id="fc-spam">2</span>
-      </button>
-      <button class="folder-btn" onclick="setFolder('trash',this)"
-        ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'trash')">
-        <span class="fi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span> <span data-i18n="trash">Papierkorb</span>
-        <span class="fc" id="fc-trash" style="display:none"></span>
-      </button>
-
+      <div id="sidebar-dynamic"></div>
       <div class="sec-label" data-i18n="labels" style="margin-top:6px">Labels</div>
       <div id="sidebar-labels"></div>
     </div>
 
     <div class="sidebar-footer">
-      <div class="sec-label" data-i18n="accounts">Konten</div>
-      <div id="sidebar-accounts"></div>
-      <button class="account-btn" onclick="openAccounts();showAccTab('add')" style="margin-top:2px;">
-        <span style="font-size:12px;color:var(--muted-light)">＋</span>
-        <span data-i18n="addAccount" style="color:var(--muted-light)">Konto hinzufügen</span>
-      </button>
+      <div id="sidebar-accounts" style="display:none"></div>
       <div class="auth-user-row" id="auth-user-row" style="display:none">
         <div class="auth-user-avatar" id="auth-user-avatar">J</div>
         <div class="auth-user-info">
@@ -1398,6 +1373,7 @@ function loadUserData() {
   customCategories = JSON.parse(localStorage.getItem(uk('jm-categories')) || '[]');
   defaultTplId = localStorage.getItem(uk('jm-default-tpl')) || 'plain';
   currentFolder = 'inbox';
+  currentAccountFilter = null;
   currentFilter = 'all';
   currentCategory = null;
   currentId = null;
@@ -1410,7 +1386,7 @@ function loadUserData() {
   const inboxBtn = document.querySelector('.folder-btn[onclick*="inbox"]');
   if (inboxBtn) inboxBtn.classList.add('active');
   document.getElementById('list-title').textContent = TRANSLATIONS[currentLang].folderTitles.inbox;
-  renderSidebarAccounts();
+  renderSidebar();
 }
 
 /* ---- State ---- */
@@ -1428,6 +1404,18 @@ let dragId = null;
 let selectedAccounts = [];
 
 const STAR_COLORS = { gold:'#e8b40c', red:'#ef4444', blue:'#3b82f6', green:'#22c55e', purple:'#8b5cf6' };
+
+const FOLDER_ICONS = {
+  inbox:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 13 17 13 15 16 9 16 7 13 2 13"/><path d="M5.45 5.11L2 13v3a2 2 0 002 2h16a2 2 0 002-2v-3L18.55 5.11A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>`,
+  starred: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  sent:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  drafts:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  spam:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  trash:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+};
+
+let currentAccountFilter = null; // null = all accounts, 'email' = specific account
+let collapsedSections = new Set();
 const CAT_COLORS = ['#3b82f6','#8b5cf6','#22c55e','#ef4444','#f97316','#ec4899'];
 
 /* ---- Helpers ---- */
@@ -1447,18 +1435,11 @@ function avatarGrad(account) {
 /* ---- Email list ---- */
 function visible() {
   return emails.filter(e => {
+    // Account filters (pills = multi-select, currentAccountFilter = single from sidebar)
+    if (currentAccountFilter && e.account !== currentAccountFilter) return false;
+    if (!currentAccountFilter && selectedAccounts.length && !selectedAccounts.includes(e.account)) return false;
+
     if (currentFolder === 'starred') return !!e.starColor && e.folder !== 'trash';
-    if (currentFolder === 'all') {
-      if (e.folder === 'trash' || e.folder === 'spam') return false;
-      if (selectedAccounts.length && !selectedAccounts.includes(e.account)) return false;
-      if (currentFilter === 'unread' && !e.unread) return false;
-      if (currentFilter === 'starred' && !e.starColor) return false;
-      if (searchQ) {
-        const q = searchQ.toLowerCase();
-        return e.from.toLowerCase().includes(q) || e.subject.toLowerCase().includes(q) || e.preview.toLowerCase().includes(q);
-      }
-      return true;
-    }
     if (currentCategory) return (e.labels||[]).includes(currentCategory) && e.folder !== 'trash';
     if (e.folder !== currentFolder) return false;
     if (currentFilter === 'unread' && !e.unread) return false;
@@ -1506,20 +1487,7 @@ function renderList() {
   }).join('');
   renderSidebarLabels();
   renderCustomTabs();
-  // Folder badges
-  const inboxUnread = emails.filter(e => e.folder === 'inbox' && e.unread).length;
-  const fcInbox = document.getElementById('fc-inbox');
-  fcInbox.textContent = inboxUnread || '';
-  fcInbox.style.display = inboxUnread ? '' : 'none';
-  const spamCount = emails.filter(e => e.folder === 'spam').length;
-  const fcSpam = document.getElementById('fc-spam');
-  fcSpam.textContent = spamCount || '';
-  fcSpam.style.display = spamCount ? '' : 'none';
-  // Trash badge
-  const trashCount = emails.filter(e => e.folder === 'trash').length;
-  const fcTrash = document.getElementById('fc-trash');
-  fcTrash.textContent = trashCount;
-  fcTrash.style.display = trashCount ? '' : 'none';
+  renderSidebar();
   // Update delete button label in reading pane
   const delBtn = document.getElementById('btn-delete');
   if (delBtn) delBtn.textContent = currentFolder === 'trash' ? t('deletePermanently') : t('delete');
@@ -1979,16 +1947,16 @@ function ctxDelete() {
 }
 
 /* ---- Folder / filter ---- */
-function setFolder(folder, btn) {
+function setFolder(folder, accountId) {
   currentFolder = folder;
+  currentAccountFilter = accountId || null;
   currentCategory = null;
   currentId = null;
   currentFilter = 'all';
-  selectedAccounts = [];
+  // Pills: if navigating to specific account folder, clear pills
+  if (currentAccountFilter) selectedAccounts = [];
   document.getElementById('empty-pane').style.display = '';
   document.getElementById('pane-inner').style.display = 'none';
-  document.querySelectorAll('.folder-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
   document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
   document.querySelector('.ftab').classList.add('active');
   const titles = TRANSLATIONS[currentLang].folderTitles;
@@ -1997,6 +1965,14 @@ function setFolder(folder, btn) {
   const mfn = document.getElementById('m-folder-name');
   if (mfn) mfn.textContent = folderLabel;
   document.getElementById('empty-trash-btn').style.display = folder === 'trash' ? '' : 'none';
+  renderSidebar();
+  if (window.innerWidth <= 768) closeDrawer();
+  renderList();
+}
+
+function _setFolderLegacy(folder, btn) {
+  // kept for drag-drop which calls setFolder with an element
+  if (btn && btn.classList) btn.classList.add('active');
   const accRow = document.getElementById('acc-filter-row');
   if (folder === 'all') {
     renderAccFilter();
@@ -2457,6 +2433,112 @@ function selectProvider(p, btn) {
   note.style.display = (p === 'gmail' || p === 'outlook' || p === 'icloud') ? '' : 'none';
 }
 
+function _folderBtn(folder, accountId, label, badge) {
+  const isActive = currentFolder === folder && currentAccountFilter === accountId;
+  const dragAttr = ['inbox','sent','drafts','spam','trash'].includes(folder)
+    ? `ondragover="onFolderDragOver(event)" ondragleave="onFolderDragLeave(event)" ondrop="onFolderDrop(event,'${folder}')"` : '';
+  const badgeId = !accountId ? `id="fc-${folder}"` : '';
+  const badgeHtml = badge > 0 ? `<span class="fc" ${badgeId}>${badge}</span>` : `<span class="fc" ${badgeId} style="display:none"></span>`;
+  return `<button class="folder-btn${isActive?' active':''}" onclick="setFolder('${folder}','${accountId||''}')" ${dragAttr}>
+    <span class="fi">${FOLDER_ICONS[folder]||''}</span>
+    <span>${label}</span>
+    ${badgeHtml}
+  </button>`;
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar-dynamic');
+  if (!el) return;
+  const accounts = getAllAccounts();
+  const tr = TRANSLATIONS[currentLang];
+
+  // Count badges
+  const unreadInbox = emails.filter(e => e.folder==='inbox' && e.unread).length;
+  const spamCount   = emails.filter(e => e.folder==='spam').length;
+
+  // Account pills
+  let pillsHtml = '';
+  if (accounts.length > 0) {
+    pillsHtml = `<div class="sb-pills">` + accounts.map(a => {
+      const active = selectedAccounts.includes(a.id || a.email);
+      const color = a.color || '#7a766f';
+      const glowStyle = active ? `box-shadow:0 0 0 1.5px ${color},0 0 10px ${color}66,0 0 22px ${color}33;border-color:${color};color:var(--ink)` : '';
+      return `<button class="sb-pill${active?' active':''}" style="${glowStyle}" onclick="toggleSbPill('${a.id||a.email}','${color}')">
+        <span class="adot2" style="background:${color}"></span>${a.displayName || a.email.split('@')[0]}
+      </button>`;
+    }).join('') + `</div>`;
+  }
+
+  // Universal "Alle Konten" section
+  const folderLabels = tr.folderTitles || {};
+  const universalFolders = [
+    _folderBtn('inbox',   null, folderLabels.inbox   || 'Posteingang', unreadInbox),
+    _folderBtn('starred', null, folderLabels.starred || 'Markiert',    0),
+    _folderBtn('sent',    null, folderLabels.sent    || 'Gesendet',    0),
+    _folderBtn('drafts',  null, folderLabels.drafts  || 'Entwürfe',    emails.filter(e=>e.folder==='drafts').length),
+    _folderBtn('spam',    null, folderLabels.spam    || 'Spam',        spamCount),
+    _folderBtn('trash',   null, folderLabels.trash   || 'Papierkorb',  0),
+  ].join('');
+
+  const chevron = `<svg class="fsec-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+  let universalHtml = `<div class="fsec${collapsedSections.has('__all__')?' collapsed':''}">
+    <div class="fsec-head" onclick="toggleSbSection('__all__')">
+      <span class="fsec-adot" style="background:var(--muted-light)"></span>
+      <span>Alle Konten</span>${chevron}
+    </div>
+    <div class="fsec-body">${universalFolders}</div>
+  </div>`;
+
+  // Per-account sections
+  let accSectionsHtml = accounts.map(a => {
+    const aId = a.id || a.email;
+    const collapsed = collapsedSections.has(aId);
+    const unreadAcc = emails.filter(e => e.folder==='inbox' && e.unread && (e.account===aId||e.account===a.email)).length;
+    const spamAcc   = emails.filter(e => e.folder==='spam'  && (e.account===aId||e.account===a.email)).length;
+    const accFolders = [
+      _folderBtn('inbox',   aId, folderLabels.inbox   || 'Posteingang', unreadAcc),
+      _folderBtn('starred', aId, folderLabels.starred || 'Markiert',    0),
+      _folderBtn('sent',    aId, folderLabels.sent    || 'Gesendet',    0),
+      _folderBtn('drafts',  aId, folderLabels.drafts  || 'Entwürfe',    0),
+      _folderBtn('spam',    aId, folderLabels.spam    || 'Spam',        spamAcc),
+      _folderBtn('trash',   aId, folderLabels.trash   || 'Papierkorb',  0),
+    ].join('');
+    const label = a.displayName || a.email;
+    return `<div class="fsec${collapsed?' collapsed':''}">
+      <div class="fsec-head" onclick="toggleSbSection('${aId}')">
+        <span class="fsec-adot" style="background:${a.color||'#7a766f'}"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${label}</span>${chevron}
+      </div>
+      <div class="fsec-body">${accFolders}</div>
+    </div>`;
+  }).join('');
+
+  // Add account button at bottom
+  const addBtn = `<button class="account-btn" onclick="openAccounts();showAccTab('add')" style="margin:6px 4px 2px">
+    <span style="font-size:12px;color:var(--muted-light)">＋</span>
+    <span style="color:var(--muted-light)" data-i18n="addAccount">Konto hinzufügen</span>
+  </button>`;
+
+  el.innerHTML = pillsHtml + universalHtml + accSectionsHtml + addBtn;
+}
+
+function toggleSbSection(id) {
+  if (collapsedSections.has(id)) collapsedSections.delete(id);
+  else collapsedSections.add(id);
+  renderSidebar();
+}
+
+function toggleSbPill(id, color) {
+  const idx = selectedAccounts.indexOf(id);
+  if (idx === -1) selectedAccounts.push(id);
+  else selectedAccounts.splice(idx, 1);
+  // Exit per-account view when using pills
+  currentAccountFilter = null;
+  renderSidebar();
+  renderList();
+}
+
 function renderSidebarAccounts() {
   const el = document.getElementById('sidebar-accounts');
   if (!el) return;
@@ -2492,7 +2574,7 @@ function renderAccList() {
       <button onclick="removeAccount(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Konto entfernen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>
     </div>`;
   }).join('');
-  renderSidebarAccounts();
+  renderSidebar();
 }
 
 function _accFormCreds() {
