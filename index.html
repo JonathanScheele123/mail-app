@@ -488,6 +488,12 @@
       /* Compose fullscreen on mobile */
       #compose-overlay { padding:0; }
       #compose-overlay .modal-box { border-radius:0; }
+      /* Template bar visible & scrollable on mobile */
+      .tpl-bar { padding:8px 14px;gap:6px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch; }
+      .tpl-bar::-webkit-scrollbar { display:none; }
+      .tpl-label { display:none; }
+      .tpl-select { font-size:12px;padding:5px 8px;min-width:0;flex:1; }
+      .tpl-btn { font-size:10.5px;padding:5px 10px;white-space:nowrap;flex-shrink:0; }
     }
     @media (max-width: 480px) {
       .pac { font-size:8.5px !important;padding:5px 8px !important; }
@@ -1365,11 +1371,35 @@ const BUILTIN_TEMPLATES = [
   { name:'Redaktionsplan', id:'b_3', content: `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"/><style>@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap');*{box-sizing:border-box}body{margin:0;padding:0;background:#fff;-webkit-font-smoothing:antialiased}a{text-decoration:none}img{border:0}</style></head><body style="margin:0;padding:0;background:#fff"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff;background-image:radial-gradient(ellipse at 14% 6%,rgba(41,42,145,.09) 0%,rgba(41,42,145,0) 52%),radial-gradient(ellipse at 86% 96%,rgba(41,42,145,.07) 0%,rgba(41,42,145,0) 54%)"><tr><td align="center" style="padding:56px 16px"><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;margin:0 auto"><tr><td align="center" style="padding:0 48px"><img src="/Users/jonathanscheele/social-agency-app/public/logo.png" alt="JS Media" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:14px"/></td></tr><tr><td align="center" style="padding:28px 48px 0"><p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-weight:500;font-size:34px;line-height:1.15;color:#111;text-align:center">Ihr Redaktionsplan<br/><em style="font-style:italic;font-weight:400;color:#2a2a2a">ist bereit.</em></p></td></tr><tr><td align="center" style="padding:22px 48px 0"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="width:24px;border-top:1px solid #c8c4bc;line-height:0;font-size:0">&nbsp;</td><td style="padding:0 10px;font-family:'EB Garamond',Georgia,serif;font-size:13px;color:#6b6b6b;line-height:1">✦</td><td style="width:24px;border-top:1px solid #c8c4bc;line-height:0;font-size:0">&nbsp;</td></tr></table></td></tr><tr><td align="center" style="padding:22px 72px 0"><p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#4b5468;text-align:center">Hallo [Vorname],</p></td></tr><tr><td style="padding:16px 72px 0"><p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#2a2a2a;text-align:center">Ihre Content-Beiträge wurden erfolgreich im Redaktionsplan eingetragen. Sie können jetzt alle geplanten Inhalte einsehen und freigeben.</p></td></tr><tr><td style="padding:36px 48px 0"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e6e3dd;border-bottom:1px solid #e6e3dd"><tr><td style="padding:18px 2px"><p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:10.5px;letter-spacing:.20em;text-transform:uppercase;color:#8a8680;line-height:1">Ihre Einträge diese Woche</p><p style="margin:8px 0 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;color:#2a2a2a;line-height:1.65">[Anzahl] Beiträge · [Plattform] · [Zeitraum]</p></td></tr></table></td></tr><tr><td align="center" style="padding:40px 48px 0"><a href="https://app.js-media.de/login" style="display:inline-block;padding:16px 38px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:.20em;text-transform:uppercase;color:#111;text-decoration:none;background-color:rgba(255,255,255,.30);background-image:linear-gradient(180deg,rgba(255,255,255,.60) 0%,rgba(255,255,255,.08) 62%,rgba(255,255,255,.35) 100%);border-radius:999px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 0 0 1px rgba(17,17,17,.06),0 8px 24px rgba(17,17,17,.08),-10px -6px 28px rgba(41,42,145,.18),10px 6px 28px rgba(41,42,145,.13)">Redaktionsplan ansehen&nbsp;&nbsp;→</a></td></tr><tr><td style="padding:44px 48px 0"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #e6e3dd;line-height:0;font-size:0">&nbsp;</td></tr></table></td></tr><tr><td style="padding:28px 72px 0"><p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#2a2a2a;text-align:center">Mit freundlichen Grüßen,</p></td></tr><tr><td align="center" style="padding:10px 48px 0"><p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:19px;color:#111;text-align:center;line-height:1.3">Jonathan Scheele</p><p style="margin:5px 0 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;color:#7a766f;text-align:center;letter-spacing:.18em;text-transform:uppercase;line-height:1">JS Media</p></td></tr><tr><td style="padding:36px 48px 0"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #e6e3dd;line-height:0;font-size:0">&nbsp;</td></tr></table></td></tr><tr><td align="center" style="padding:20px 48px 48px"><p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.9;color:#8a8680;letter-spacing:.06em;text-align:center">JS Media · Jonathan Scheele · Enderstraße 94 · 01277 Dresden<br/><a href="mailto:kontakt@jonathanscheele.de" style="color:#8a8680">kontakt@jonathanscheele.de</a> · <a href="https://www.js-handwerk.de" style="color:#292a91;font-weight:500">www.js-handwerk.de</a></p></td></tr></table></td></tr></table></body></html>` }
 ];
 
+/* ---- Per-user data scoping ---- */
+let currentUserEmail = '';
+function uk(key) { return currentUserEmail ? key + ':' + currentUserEmail : key; }
+
+function loadUserData() {
+  emails = JSON.parse(localStorage.getItem(uk('jm-emails')) || 'null') || [];
+  templates = JSON.parse(localStorage.getItem(uk('jm-templates')) || '[]');
+  customCategories = JSON.parse(localStorage.getItem(uk('jm-categories')) || '[]');
+  defaultTplId = localStorage.getItem(uk('jm-default-tpl')) || 'plain';
+  currentFolder = 'inbox';
+  currentFilter = 'all';
+  currentCategory = null;
+  currentId = null;
+  currentDraftId = null;
+  searchQ = '';
+  selectedAccounts = [];
+  document.getElementById('empty-pane').style.display = '';
+  document.getElementById('pane-inner').style.display = 'none';
+  document.querySelectorAll('.folder-btn').forEach(b => b.classList.remove('active'));
+  const inboxBtn = document.querySelector('.folder-btn[onclick*="inbox"]');
+  if (inboxBtn) inboxBtn.classList.add('active');
+  document.getElementById('list-title').textContent = TRANSLATIONS[currentLang].folderTitles.inbox;
+}
+
 /* ---- State ---- */
-let emails = JSON.parse(localStorage.getItem('jm-emails') || 'null') || DEFAULT_EMAILS;
-let templates = JSON.parse(localStorage.getItem('jm-templates') || '[]');
-let customCategories = JSON.parse(localStorage.getItem('jm-categories') || '[]');
-let defaultTplId = localStorage.getItem('jm-default-tpl') || 'plain';
+let emails = [];
+let templates = [];
+let customCategories = [];
+let defaultTplId = 'plain';
 let currentFolder = 'inbox';
 let currentFilter = 'all';
 let currentCategory = null;
@@ -1383,9 +1413,9 @@ const STAR_COLORS = { gold:'#e8b40c', red:'#ef4444', blue:'#3b82f6', green:'#22c
 const CAT_COLORS = ['#3b82f6','#8b5cf6','#22c55e','#ef4444','#f97316','#ec4899'];
 
 /* ---- Helpers ---- */
-function save() { localStorage.setItem('jm-emails', JSON.stringify(emails)); }
-function saveTpl() { localStorage.setItem('jm-templates', JSON.stringify(templates)); }
-function saveCats() { localStorage.setItem('jm-categories', JSON.stringify(customCategories)); }
+function save() { localStorage.setItem(uk('jm-emails'), JSON.stringify(emails)); }
+function saveTpl() { localStorage.setItem(uk('jm-templates'), JSON.stringify(templates)); }
+function saveCats() { localStorage.setItem(uk('jm-categories'), JSON.stringify(customCategories)); }
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -1903,7 +1933,7 @@ function setFolder(folder, btn) {
 
 function renderAccFilter() {
   const row = document.getElementById('acc-filter-row');
-  const accounts = JSON.parse(localStorage.getItem('jm-accounts') || 'null') || ACCOUNTS_BASE;
+  const accounts = JSON.parse(localStorage.getItem(uk('jm-accounts')) || 'null') || ACCOUNTS_BASE;
   row.innerHTML = accounts.map(a => {
     const active = selectedAccounts.includes(a.id);
     return `<button class="acc-pill${active?' active':''}" onclick="toggleAccFilter('${a.id}')"><span class="adot2" style="background:${a.color}"></span>${a.email}</button>`;
@@ -2203,7 +2233,7 @@ function confirmTplImport() {
 function setDefaultTpl() {
   const val = document.getElementById('tpl-select').value;
   defaultTplId = val;
-  localStorage.setItem('jm-default-tpl', val);
+  localStorage.setItem(uk('jm-default-tpl'), val);
   updateTplSelect();
   toast(val === 'plain' ? t('toastDefaultNoTpl') : t('toastDefaultTplSet'));
 }
@@ -2243,7 +2273,7 @@ function selectProvider(p, btn) {
 }
 
 function renderAccList() {
-  const extra = JSON.parse(localStorage.getItem('jm-accounts') || '[]');
+  const extra = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
   const all = [...ACCOUNTS_BASE, ...extra];
   const el = document.getElementById('acc-list');
   const empty = document.getElementById('acc-empty');
@@ -2266,7 +2296,7 @@ function addAccount() {
   if (!email) { document.getElementById('acc-email').focus(); return; }
   const p = currentProvider;
   const pre = PROVIDER_PRESETS[p];
-  const saved = JSON.parse(localStorage.getItem('jm-accounts') || '[]');
+  const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
   saved.push({
     email, color: pre.color, label: pre.label,
     imapHost: document.getElementById('acc-imap-host').value.trim(),
@@ -2276,7 +2306,7 @@ function addAccount() {
     smtpPort: document.getElementById('acc-smtp-port').value,
     smtpEnc:  document.getElementById('acc-smtp-enc').value
   });
-  localStorage.setItem('jm-accounts', JSON.stringify(saved));
+  localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
   document.getElementById('acc-email').value = '';
   document.getElementById('acc-pass').value = '';
   renderAccList();
@@ -2285,9 +2315,9 @@ function addAccount() {
 }
 
 function removeAccount(idx) {
-  const saved = JSON.parse(localStorage.getItem('jm-accounts') || '[]');
+  const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
   saved.splice(idx, 1);
-  localStorage.setItem('jm-accounts', JSON.stringify(saved));
+  localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
   renderAccList();
   toast(t('toastAccountRemoved'));
 }
@@ -2386,6 +2416,8 @@ function clearSession() { sessionStorage.removeItem('jm-session'); }
 function initAuth() {
   const s = getSession();
   if (s) {
+    currentUserEmail = s.email;
+    loadUserData();
     document.getElementById('auth-overlay').classList.add('hidden');
     updateUserDisplay(s);
   } else {
@@ -2435,6 +2467,10 @@ async function doLogin() {
   if (!user) { showAuthError('E-Mail oder Passwort falsch.'); return; }
   const safeUser = { name: user.name, email: user.email };
   setSession(safeUser);
+  currentUserEmail = user.email;
+  loadUserData();
+  renderList();
+  applyLang();
   document.getElementById('auth-overlay').classList.add('hidden');
   updateUserDisplay(safeUser);
 }
@@ -2455,6 +2491,10 @@ async function doRegister() {
   saveUsers(users);
   const safeUser = { name, email };
   setSession(safeUser);
+  currentUserEmail = email;
+  loadUserData();
+  renderList();
+  applyLang();
   document.getElementById('auth-overlay').classList.add('hidden');
   updateUserDisplay(safeUser);
   toast('Willkommen, ' + name + '! ✓');
@@ -2474,9 +2514,12 @@ function logoutUser() {
 }
 
 function deleteAccount() {
-  if (!confirm('Alle deine Daten (Konto, E-Mails, Einstellungen) werden unwiderruflich gelöscht. Fortfahren?')) return;
-  ['jm-users','jm-emails','jm-templates','jm-categories','jm-default-tpl','jm-accounts','jm-lang','jm-notice-ok'].forEach(k => localStorage.removeItem(k));
+  if (!confirm('Alle deine Daten (E-Mails, Vorlagen, Einstellungen) werden unwiderruflich gelöscht. Fortfahren?')) return;
+  ['jm-emails','jm-templates','jm-categories','jm-default-tpl','jm-accounts'].forEach(k => localStorage.removeItem(uk(k)));
+  const users = getUsers().filter(u => u.email !== currentUserEmail);
+  saveUsers(users);
   clearSession();
+  currentUserEmail = '';
   location.reload();
 }
 
