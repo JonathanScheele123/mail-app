@@ -922,10 +922,8 @@
     <div class="cfields">
       <div class="cfield">
         <label data-i18n="from">Von</label>
-        <select id="cFrom" onchange="document.getElementById('from-ind').textContent=this.value">
-          <option>kontakt@jonathanscheele.de</option>
-          <option>j.scheele@icloud.com</option>
-        </select>
+        <select id="cFrom" onchange="updateFromWarning()"></select>
+        <span id="from-creds-warn" style="display:none;font-size:11px;color:#f59e0b;margin-top:3px;padding:4px 8px;background:rgba(245,158,11,.1);border-radius:6px;border:1px solid rgba(245,158,11,.25)">⚠ Kein App-Passwort konfiguriert – <a href="#" onclick="openAccounts();showAccTab('add');closeCompose();return false" style="color:#f59e0b;text-decoration:underline">Konto einrichten</a></span>
       </div>
       <div class="cfield">
         <label data-i18n="to">An</label>
@@ -1088,8 +1086,11 @@
         Outlook: account.microsoft.com → Sicherheit → App-Passwörter.
       </div>
 
-      <div style="margin-top:20px;display:flex;gap:10px">
+      <div id="acc-test-result" style="display:none;margin-top:14px;padding:11px 14px;border-radius:10px;font-size:12.5px;line-height:1.5"></div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button data-i18n="connect" onclick="addAccount()" style="padding:10px 28px;background:var(--ink);color:#fff;border:none;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;cursor:pointer">Verbinden</button>
+        <button id="acc-test-btn" onclick="testAccountConnection()" style="padding:10px 20px;background:none;border:1px solid var(--rule);border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">Verbindung testen</button>
         <button data-i18n="cancel" onclick="showAccTab('list')" style="padding:10px 18px;background:none;border:none;font-family:'Inter',sans-serif;font-size:11px;color:var(--muted);cursor:pointer;border-radius:999px">Abbrechen</button>
       </div>
     </div>
@@ -2028,10 +2029,29 @@ function forwardEmail() {
 }
 
 /* ---- Compose ---- */
+function populateFromSelect() {
+  const sel = document.getElementById('cFrom');
+  const allAccounts = [...ACCOUNTS_BASE, ...(JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]'))];
+  sel.innerHTML = allAccounts.map(a => `<option value="${a.email}">${a.email}</option>`).join('');
+}
+function updateFromWarning() {
+  const from = document.getElementById('cFrom').value;
+  const ind = document.getElementById('from-ind');
+  if (ind) ind.textContent = from;
+  const creds = getAccountCreds(from);
+  const warn = document.getElementById('from-creds-warn');
+  warn.style.display = (!creds?.pass) ? '' : 'none';
+  if (warn.style.display === '') {
+    const link = warn.querySelector('a');
+    if (link) link.onclick = (e) => { e.preventDefault(); closeCompose(); openAccounts(); showAccTab('add'); document.getElementById('acc-email').value = from; };
+  }
+}
 function openCompose() {
   if (window.innerWidth <= 768) closeDrawer();
   updateTplSelect();
+  populateFromSelect();
   document.getElementById('compose-overlay').classList.add('open');
+  updateFromWarning();
   setTimeout(() => document.getElementById('cTo').focus(), 100);
 }
 function closeCompose() {
@@ -2122,7 +2142,10 @@ async function sendEmail() {
     if (currentDraftId) emails = emails.filter(e => e.id !== currentDraftId);
     save(); closeCompose(); toast(t('toastEmailSent'));
   } catch(e) {
-    toast('Sendefehler: ' + e.message);
+    const t2 = document.getElementById('toast');
+    t2.textContent = 'Sendefehler: ' + e.message;
+    t2.classList.add('show');
+    setTimeout(() => t2.classList.remove('show'), 6000);
   } finally {
     sendBtn.textContent = t('send');
     sendBtn.disabled = false;
@@ -2308,7 +2331,10 @@ function showAccTab(tab) {
   document.getElementById('acc-view-add').style.display = tab === 'add' ? '' : 'none';
   document.getElementById('acc-tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('acc-tab-add').classList.toggle('active', tab === 'add');
-  if (tab === 'add') selectProvider(currentProvider, document.querySelector('.acc-provider-btn[data-p="'+currentProvider+'"]'));
+  if (tab === 'add') {
+    document.getElementById('acc-test-result').style.display = 'none';
+    selectProvider(currentProvider, document.querySelector('.acc-provider-btn[data-p="'+currentProvider+'"]'));
+  }
 }
 
 function selectProvider(p, btn) {
@@ -2334,16 +2360,89 @@ function renderAccList() {
   const empty = document.getElementById('acc-empty');
   if (!all.length) { el.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
-  el.innerHTML = all.map((a, i) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule)">
+  el.innerHTML = all.map((a, i) => {
+    const creds = getAccountCreds(a.email);
+    const hasPass = !!(creds?.pass);
+    const isBase = i < ACCOUNTS_BASE.length;
+    const extraIdx = i - ACCOUNTS_BASE.length;
+    const statusBadge = hasPass
+      ? `<span style="font-size:10px;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 7px;border-radius:999px;flex-shrink:0;border:1px solid rgba(34,197,94,.25)">✓ Verbunden</span>`
+      : `<span style="font-size:10px;color:#f59e0b;background:rgba(245,158,11,.1);padding:2px 7px;border-radius:999px;flex-shrink:0;border:1px solid rgba(245,158,11,.25)">⚠ Nicht eingerichtet</span>`;
+    const setupBtn = `<button onclick="showAccTab('add');document.getElementById('acc-email').value='${a.email}'" style="background:none;border:1px solid var(--rule);cursor:pointer;color:var(--ink-soft);font-size:11px;padding:3px 9px;border-radius:6px;flex-shrink:0;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">${hasPass ? 'Aktualisieren' : 'Einrichten'}</button>`;
+    const removeBtn = isBase
+      ? (hasPass ? `<button onclick="removeAccountCreds('${a.email}')" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Zugangsdaten löschen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>` : '')
+      : `<button onclick="removeAccount(${extraIdx})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Konto entfernen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>`;
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)">
       <span style="width:9px;height:9px;border-radius:50%;background:${a.color||'#7a766f'};flex-shrink:0;display:inline-block"></span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.email}</div>
-        ${a.imapHost ? `<div style="font-size:11px;color:var(--muted-light);margin-top:2px">IMAP: ${a.imapHost}:${a.imapPort} · SMTP: ${a.smtpHost}:${a.smtpPort}</div>` : ''}
+        ${a.imapHost ? `<div style="font-size:11px;color:var(--muted-light);margin-top:2px">IMAP: ${a.imapHost} · SMTP: ${a.smtpHost}</div>` : ''}
       </div>
-      <span style="font-size:10px;color:var(--muted-light);background:var(--paper);padding:2px 8px;border-radius:999px;flex-shrink:0">${a.label||t('noLabel')}</span>
-      ${i >= ACCOUNTS_BASE.length ? `<button onclick="removeAccount(${i - ACCOUNTS_BASE.length})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0;flex-shrink:0;transition:color .12s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>` : ''}
-    </div>`).join('');
+      ${statusBadge}
+      ${setupBtn}
+      ${removeBtn}
+    </div>`;
+  }).join('');
+}
+
+function _accFormCreds() {
+  return {
+    email:    document.getElementById('acc-email').value.trim(),
+    pass:     document.getElementById('acc-pass').value,
+    imapHost: document.getElementById('acc-imap-host').value.trim(),
+    imapPort: document.getElementById('acc-imap-port').value,
+    smtpHost: document.getElementById('acc-smtp-host').value.trim(),
+    smtpPort: document.getElementById('acc-smtp-port').value,
+    smtpEnc:  document.getElementById('acc-smtp-enc').value,
+  };
+}
+function _setTestResult(ok, msg) {
+  const el = document.getElementById('acc-test-result');
+  el.style.display = '';
+  if (ok === null) {
+    el.style.background = 'rgba(120,120,120,.08)';
+    el.style.border = '1px solid rgba(120,120,120,.2)';
+    el.style.color = 'var(--ink-soft)';
+    el.innerHTML = msg;
+  } else if (ok) {
+    el.style.background = 'rgba(34,197,94,.08)';
+    el.style.border = '1px solid rgba(34,197,94,.25)';
+    el.style.color = '#15803d';
+    el.innerHTML = msg;
+  } else {
+    el.style.background = 'rgba(220,38,38,.07)';
+    el.style.border = '1px solid rgba(220,38,38,.22)';
+    el.style.color = '#b91c1c';
+    el.innerHTML = msg;
+  }
+}
+async function testAccountConnection() {
+  const c = _accFormCreds();
+  if (!c.email) { document.getElementById('acc-email').focus(); return; }
+  if (!c.pass)  { document.getElementById('acc-pass').focus(); return; }
+  if (!c.imapHost) { _setTestResult(false, '✗ Kein IMAP-Server angegeben.'); return; }
+  const btn = document.getElementById('acc-test-btn');
+  btn.textContent = 'Teste…'; btn.disabled = true;
+  _setTestResult(null, 'Verbinde mit ' + c.imapHost + ':' + c.imapPort + ' …');
+  try {
+    const resp = await fetch('/api/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imapHost: c.imapHost, imapPort: parseInt(c.imapPort)||993, user: c.email, pass: c.pass, limit: 1 })
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      const count = data.emails?.length ?? 0;
+      _setTestResult(true, '✓ Verbindung erfolgreich! ' + (count > 0 ? `${count} E-Mail(s) im Posteingang gefunden.` : 'Posteingang ist leer oder noch nicht geladen.'));
+    } else {
+      throw new Error(data.error || 'Unbekannter Fehler');
+    }
+  } catch(e) {
+    _setTestResult(false, '✗ Verbindung fehlgeschlagen:<br><code style="font-family:monospace;font-size:11.5px;word-break:break-all">' + e.message + '</code><br><br><strong>Mögliche Ursachen:</strong><br>• Falscher IMAP-Server oder Port<br>• Falsches App-Passwort (kein normales Passwort!)<br>• 2-Faktor-Auth nicht aktiviert (Gmail)<br>• IMAP in den Kontoeinstellungen nicht aktiviert');
+  } finally {
+    btn.textContent = 'Verbindung testen'; btn.disabled = false;
+  }
 }
 
 function addAccount() {
@@ -2380,13 +2479,22 @@ function addAccount() {
 
 function removeAccount(idx) {
   const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
+  const email = saved[idx]?.email;
   saved.splice(idx, 1);
   localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
+  if (email) removeAccountCreds(email);
   renderAccList();
   toast(t('toastAccountRemoved'));
 }
 
 /* ---- Account credentials (stored separately, keyed by email) ---- */
+function removeAccountCreds(email) {
+  const all = JSON.parse(localStorage.getItem(uk('jm-creds')) || '{}');
+  delete all[email];
+  localStorage.setItem(uk('jm-creds'), JSON.stringify(all));
+  renderAccList();
+  toast(t('toastAccountRemoved'));
+}
 function saveAccountCreds(email, creds) {
   const all = JSON.parse(localStorage.getItem(uk('jm-creds')) || '{}');
   all[email] = creds;
