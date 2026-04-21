@@ -778,15 +778,8 @@
 
     <div class="sidebar-footer">
       <div class="sec-label" data-i18n="accounts">Konten</div>
-      <button class="account-btn" onclick="openAccounts()">
-        <span class="adot" style="background:#ea4335"></span>
-        <span>kontakt@jonathanscheele.de</span>
-      </button>
-      <button class="account-btn" onclick="openAccounts()">
-        <span class="adot" style="background:#3b82f6"></span>
-        <span>j.scheele@icloud.com</span>
-      </button>
-      <button class="account-btn" onclick="openAccounts()" style="margin-top:2px;">
+      <div id="sidebar-accounts"></div>
+      <button class="account-btn" onclick="openAccounts();showAccTab('add')" style="margin-top:2px;">
         <span style="font-size:12px;color:var(--muted-light)">＋</span>
         <span data-i18n="addAccount" style="color:var(--muted-light)">Konto hinzufügen</span>
       </button>
@@ -1407,6 +1400,7 @@ function loadUserData() {
   const inboxBtn = document.querySelector('.folder-btn[onclick*="inbox"]');
   if (inboxBtn) inboxBtn.classList.add('active');
   document.getElementById('list-title').textContent = TRANSLATIONS[currentLang].folderTitles.inbox;
+  renderSidebarAccounts();
 }
 
 /* ---- State ---- */
@@ -2354,6 +2348,17 @@ function selectProvider(p, btn) {
   note.style.display = (p === 'gmail' || p === 'outlook' || p === 'icloud') ? '' : 'none';
 }
 
+function renderSidebarAccounts() {
+  const el = document.getElementById('sidebar-accounts');
+  if (!el) return;
+  const all = getAllAccounts();
+  el.innerHTML = all.map(a => `
+    <button class="account-btn" onclick="openAccounts()">
+      <span class="adot" style="background:${a.color||'#7a766f'}"></span>
+      <span>${a.email}</span>
+    </button>`).join('');
+}
+
 function renderAccList() {
   const all = getAllAccounts();
   const el = document.getElementById('acc-list');
@@ -2378,6 +2383,7 @@ function renderAccList() {
       <button onclick="removeAccount(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Konto entfernen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>
     </div>`;
   }).join('');
+  renderSidebarAccounts();
 }
 
 function _accFormCreds() {
