@@ -1366,10 +1366,10 @@ const DEFAULT_EMAILS = [
   }
 ];
 
-const ACCOUNTS_BASE = [
-  { id:'work', email:'kontakt@jonathanscheele.de', color:'#ea4335', label:'Gmail', imapHost:'imap.gmail.com', imapPort:993, smtpHost:'smtp.gmail.com', smtpPort:587 },
-  { id:'apple', email:'j.scheele@icloud.com', color:'#3b82f6', label:'iCloud', imapHost:'imap.mail.me.com', imapPort:993, smtpHost:'smtp.mail.me.com', smtpPort:587 }
-];
+const ACCOUNTS_BASE = [];
+function getAllAccounts() {
+  return JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
+}
 
 const PROVIDER_PRESETS = {
   gmail:   { color:'#ea4335', label:'Gmail',   imapHost:'imap.gmail.com',        imapPort:993, smtpHost:'smtp.gmail.com',        smtpPort:587 },
@@ -1436,7 +1436,7 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 function avatarGrad(account) {
-  const a = ACCOUNTS_BASE.find(x => x.id === account);
+  const a = getAllAccounts().find(x => x.id === account || x.email === account);
   return a ? `linear-gradient(135deg,${a.color},#8b5cf6)` : 'linear-gradient(135deg,#7a766f,#2a2a2a)';
 }
 
@@ -1472,7 +1472,7 @@ function renderList() {
   const v = visible();
   if (!v.length) { list.innerHTML = `<div class="empty-list">${t('noEmails')}</div>`; return; }
   list.innerHTML = v.map(e => {
-    const acc = ACCOUNTS_BASE.find(a => a.id === e.account);
+    const acc = getAllAccounts().find(a => a.id === e.account || a.email === e.account);
     const sc = e.starColor || '';
     const starStyle = sc ? `color:${STAR_COLORS[sc]}` : '';
     const chips = (e.labels||[]).map(l => {
@@ -1956,7 +1956,7 @@ function setFolder(folder, btn) {
 
 function renderAccFilter() {
   const row = document.getElementById('acc-filter-row');
-  const accounts = JSON.parse(localStorage.getItem(uk('jm-accounts')) || 'null') || ACCOUNTS_BASE;
+  const accounts = getAllAccounts();
   row.innerHTML = accounts.map(a => {
     const active = selectedAccounts.includes(a.id);
     return `<button class="acc-pill${active?' active':''}" onclick="toggleAccFilter('${a.id}')"><span class="adot2" style="background:${a.color}"></span>${a.email}</button>`;
@@ -2031,8 +2031,7 @@ function forwardEmail() {
 /* ---- Compose ---- */
 function populateFromSelect() {
   const sel = document.getElementById('cFrom');
-  const allAccounts = [...ACCOUNTS_BASE, ...(JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]'))];
-  sel.innerHTML = allAccounts.map(a => `<option value="${a.email}">${a.email}</option>`).join('');
+  sel.innerHTML = getAllAccounts().map(a => `<option value="${a.email}">${a.email}</option>`).join('');
 }
 function updateFromWarning() {
   const from = document.getElementById('cFrom').value;
@@ -2135,7 +2134,7 @@ async function sendEmail() {
     emails.push({
       id: Date.now(), folder:'sent', starColor:null, unread:false,
       from: t('me'), email: from,
-      account: from.includes('icloud') ? 'apple' : 'work',
+      account: from,
       subject: subject || t('noSubject'),
       preview, date, body: html
     });
@@ -2334,6 +2333,8 @@ function showAccTab(tab) {
   if (tab === 'add') {
     document.getElementById('acc-test-result').style.display = 'none';
     selectProvider(currentProvider, document.querySelector('.acc-provider-btn[data-p="'+currentProvider+'"]'));
+  } else {
+    _editingAccountIdx = -1;
   }
 }
 
@@ -2354,8 +2355,7 @@ function selectProvider(p, btn) {
 }
 
 function renderAccList() {
-  const extra = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
-  const all = [...ACCOUNTS_BASE, ...extra];
+  const all = getAllAccounts();
   const el = document.getElementById('acc-list');
   const empty = document.getElementById('acc-empty');
   if (!all.length) { el.innerHTML = ''; empty.style.display = ''; return; }
@@ -2363,15 +2363,9 @@ function renderAccList() {
   el.innerHTML = all.map((a, i) => {
     const creds = getAccountCreds(a.email);
     const hasPass = !!(creds?.pass);
-    const isBase = i < ACCOUNTS_BASE.length;
-    const extraIdx = i - ACCOUNTS_BASE.length;
     const statusBadge = hasPass
       ? `<span style="font-size:10px;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 7px;border-radius:999px;flex-shrink:0;border:1px solid rgba(34,197,94,.25)">✓ Verbunden</span>`
       : `<span style="font-size:10px;color:#f59e0b;background:rgba(245,158,11,.1);padding:2px 7px;border-radius:999px;flex-shrink:0;border:1px solid rgba(245,158,11,.25)">⚠ Nicht eingerichtet</span>`;
-    const setupBtn = `<button onclick="showAccTab('add');document.getElementById('acc-email').value='${a.email}'" style="background:none;border:1px solid var(--rule);cursor:pointer;color:var(--ink-soft);font-size:11px;padding:3px 9px;border-radius:6px;flex-shrink:0;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">${hasPass ? 'Aktualisieren' : 'Einrichten'}</button>`;
-    const removeBtn = isBase
-      ? (hasPass ? `<button onclick="removeAccountCreds('${a.email}')" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Zugangsdaten löschen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>` : '')
-      : `<button onclick="removeAccount(${extraIdx})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Konto entfernen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>`;
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)">
       <span style="width:9px;height:9px;border-radius:50%;background:${a.color||'#7a766f'};flex-shrink:0;display:inline-block"></span>
@@ -2380,8 +2374,8 @@ function renderAccList() {
         ${a.imapHost ? `<div style="font-size:11px;color:var(--muted-light);margin-top:2px">IMAP: ${a.imapHost} · SMTP: ${a.smtpHost}</div>` : ''}
       </div>
       ${statusBadge}
-      ${setupBtn}
-      ${removeBtn}
+      <button onclick="editAccount(${i})" style="background:none;border:1px solid var(--rule);cursor:pointer;color:var(--ink-soft);font-size:11px;padding:3px 9px;border-radius:6px;flex-shrink:0;transition:background .12s" onmouseover="this.style.background='var(--paper)'" onmouseout="this.style.background='none'">Bearbeiten</button>
+      <button onclick="removeAccount(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted-light);font-size:14px;padding:0 2px;flex-shrink:0;transition:color .12s" title="Konto entfernen" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted-light)'">✕</button>
     </div>`;
   }).join('');
 }
@@ -2445,6 +2439,33 @@ async function testAccountConnection() {
   }
 }
 
+let _editingAccountIdx = -1;
+
+function editAccount(idx) {
+  const saved = getAllAccounts();
+  const a = saved[idx];
+  if (!a) return;
+  _editingAccountIdx = idx;
+  // Detect provider
+  let p = 'smtp';
+  if (a.imapHost?.includes('gmail')) p = 'gmail';
+  else if (a.imapHost?.includes('mail.me')) p = 'icloud';
+  else if (a.imapHost?.includes('outlook')) p = 'outlook';
+  currentProvider = p;
+  showAccTab('add');
+  document.getElementById('acc-email').value = a.email;
+  document.getElementById('acc-imap-host').value = a.imapHost || '';
+  document.getElementById('acc-imap-port').value = a.imapPort || 993;
+  document.getElementById('acc-imap-ssl').value  = a.imapSsl  || 'ssl';
+  document.getElementById('acc-smtp-host').value = a.smtpHost || '';
+  document.getElementById('acc-smtp-port').value = a.smtpPort || 587;
+  document.getElementById('acc-smtp-enc').value  = a.smtpEnc  || 'starttls';
+  const creds = getAccountCreds(a.email);
+  document.getElementById('acc-pass').value = creds?.pass || '';
+  document.querySelectorAll('.acc-provider-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+  document.getElementById('acc-test-result').style.display = 'none';
+}
+
 function addAccount() {
   const email = document.getElementById('acc-email').value.trim();
   if (!email) { document.getElementById('acc-email').focus(); return; }
@@ -2452,6 +2473,7 @@ function addAccount() {
   const p = currentProvider;
   const pre = PROVIDER_PRESETS[p];
   const entry = {
+    id: email,
     email, color: pre.color, label: pre.label,
     imapHost: document.getElementById('acc-imap-host').value.trim(),
     imapPort: document.getElementById('acc-imap-port').value,
@@ -2460,16 +2482,19 @@ function addAccount() {
     smtpPort: document.getElementById('acc-smtp-port').value,
     smtpEnc:  document.getElementById('acc-smtp-enc').value,
   };
-  // Save credentials (incl. pass) separately, keyed by email
-  saveAccountCreds(email, { ...entry, pass });
-  // Only add to account list if not a base account
-  const isBase = ACCOUNTS_BASE.some(a => a.email === email);
-  if (!isBase) {
-    const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
-    const idx = saved.findIndex(a => a.email === email);
-    if (idx >= 0) saved[idx] = entry; else saved.push(entry);
-    localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
+  if (pass) saveAccountCreds(email, { ...entry, pass });
+  const saved = getAllAccounts();
+  if (_editingAccountIdx >= 0 && _editingAccountIdx < saved.length) {
+    // Preserve old email's creds if email changed
+    const oldEmail = saved[_editingAccountIdx].email;
+    if (oldEmail !== email) { removeAccountCreds(oldEmail); }
+    saved[_editingAccountIdx] = entry;
+  } else {
+    const existing = saved.findIndex(a => a.email === email);
+    if (existing >= 0) saved[existing] = entry; else saved.push(entry);
   }
+  _editingAccountIdx = -1;
+  localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
   document.getElementById('acc-email').value = '';
   document.getElementById('acc-pass').value = '';
   renderAccList();
@@ -2478,7 +2503,7 @@ function addAccount() {
 }
 
 function removeAccount(idx) {
-  const saved = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
+  const saved = getAllAccounts();
   const email = saved[idx]?.email;
   saved.splice(idx, 1);
   localStorage.setItem(uk('jm-accounts'), JSON.stringify(saved));
@@ -2503,13 +2528,8 @@ function saveAccountCreds(email, creds) {
 function getAccountCreds(email) {
   const all = JSON.parse(localStorage.getItem(uk('jm-creds')) || '{}');
   if (all[email]) return all[email];
-  // Fall back to jm-accounts entry
-  const accs = JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]');
-  const acc = accs.find(a => a.email === email);
-  if (acc) return acc;
-  // Fall back to ACCOUNTS_BASE config (no pass)
-  const base = ACCOUNTS_BASE.find(a => a.email === email);
-  return base ? { ...base, pass: null } : null;
+  const acc = getAllAccounts().find(a => a.email === email);
+  return acc ? { ...acc, pass: null } : null;
 }
 
 /* ---- Fetch emails from IMAP ---- */
@@ -2529,10 +2549,7 @@ async function startFetchEmails() {
 }
 
 async function fetchEmails() {
-  const allAccounts = [
-    ...ACCOUNTS_BASE,
-    ...(JSON.parse(localStorage.getItem(uk('jm-accounts')) || '[]'))
-  ];
+  const allAccounts = getAllAccounts();
   let newCount = 0;
   let fetched = false;
 
@@ -2560,9 +2577,7 @@ async function fetchEmails() {
           (!e._msgId && x.subject === e.subject && x.from === e.from && x.date === e.date)
         );
         if (dup) continue;
-        // Match account color
-        const base = ACCOUNTS_BASE.find(a => a.email === acc.email);
-        e.account = base ? base.id : 'work';
+        e.account = acc.id || acc.email;
         emails.unshift(e);
         newCount++;
       }
