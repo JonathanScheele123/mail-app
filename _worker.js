@@ -111,6 +111,8 @@ async function smtpSend({ smtpHost, smtpPort, smtpEnc, user, pass, from, to, cc,
     const hasStls = ehloLines.some(l => l.toUpperCase().includes('STARTTLS'));
     if (hasStls) {
       await cmd('STARTTLS');
+      reader.releaseLock();
+      writer.releaseLock();
       const tlsSock = socket.startTls();
       reader = tlsSock.readable.getReader();
       writer = tlsSock.writable.getWriter();
@@ -226,6 +228,8 @@ async function smtpTest({ smtpHost, smtpPort, smtpEnc, user, pass }) {
   if (!directTls) {
     if (ehloLines.some(l => l.toUpperCase().includes('STARTTLS'))) {
       await cmd('STARTTLS');
+      reader.releaseLock();
+      writer.releaseLock();
       const tlsSock = socket.startTls();
       reader = tlsSock.readable.getReader();
       writer = tlsSock.writable.getWriter();
