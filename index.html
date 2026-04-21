@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mail</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cpath d='M120 8 C192 8,232 48,232 120 C232 192,192 232,120 232 C48 232,8 192,8 120 C8 48,48 8,120 8 Z' fill='%23111111'/%3E%3Cg transform='translate(58 60)'%3E%3Cpath d='M0 62 L124 6 L76 70 L94 94 L40 74 Z' fill='%23ffffff'/%3E%3C/g%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=eb-garamond:400,400i,500|inter:400,500,600&display=swap" rel="stylesheet">
   <style>
     :root {
       --ink: #111111; --ink-soft: #2a2a2a;
@@ -599,6 +598,22 @@
     .auth-btn:hover { box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 4px 16px rgba(17,17,17,.13); }
     .auth-error { font-family:'Inter',sans-serif;font-size:12px;color:#dc2626;background:rgba(254,226,226,.65);border:1px solid rgba(252,165,165,.55);border-radius:8px;padding:8px 12px;margin-bottom:12px;display:none; }
     .auth-error.show { display:block; }
+    /* Privacy modal */
+    #privacy-overlay { position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(244,241,236,.60);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);opacity:1;transition:opacity .3s; }
+    #privacy-overlay.hidden { opacity:0;pointer-events:none; }
+    .privacy-box { width:560px;max-width:100%;max-height:82vh;overflow-y:auto;padding:32px 32px 28px; }
+    .privacy-box h2 { font-family:'EB Garamond',serif;font-size:22px;font-weight:500;margin-bottom:18px; }
+    .privacy-box h3 { font-family:'EB Garamond',serif;font-size:15px;font-weight:500;margin:18px 0 6px;color:var(--ink); }
+    .privacy-box p, .privacy-box li { font-family:'Inter',sans-serif;font-size:12.5px;line-height:1.75;color:#3a3a3a;margin-bottom:6px; }
+    .privacy-box ul { padding-left:18px; }
+    .privacy-link { font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);text-align:center;margin-top:14px;display:block;cursor:pointer;text-decoration:underline;text-underline-offset:2px;background:none;border:none;width:100%; }
+    .privacy-link:hover { color:var(--ink); }
+    /* Storage notice banner */
+    #storage-notice { position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:1500;width:calc(100% - 32px);max-width:520px;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.85);box-shadow:0 4px 24px rgba(17,17,17,.12);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;font-family:'Inter',sans-serif;font-size:12px;color:var(--ink);transition:opacity .4s,transform .4s; }
+    #storage-notice.hide { opacity:0;transform:translateX(-50%) translateY(16px);pointer-events:none; }
+    #storage-notice p { flex:1;line-height:1.6;margin:0; }
+    #storage-notice a { color:inherit;text-decoration:underline;cursor:pointer; }
+    .notice-ok { padding:7px 16px;font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.90);box-shadow:0 1px 0 rgba(255,255,255,.9) inset;border-radius:999px;cursor:pointer;white-space:nowrap; }
     /* Logged-in user row in sidebar */
     .auth-user-row { display:flex;align-items:center;gap:8px;padding:6px 10px 2px;margin-bottom:2px; }
     .auth-user-avatar { width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,rgba(139,92,246,.6),rgba(236,72,153,.5));display:flex;align-items:center;justify-content:center;font-family:'EB Garamond',serif;font-size:13px;font-weight:500;color:#fff;flex-shrink:0; }
@@ -664,6 +679,7 @@
       </div>
       <button class="auth-btn" onclick="doRegister()">Registrieren</button>
     </div>
+    <button class="privacy-link" onclick="openPrivacy()">Datenschutz &amp; Impressum</button>
   </div>
 </div>
 
@@ -776,6 +792,8 @@
         </div>
         <button class="auth-logout-btn" onclick="logoutUser()" title="Abmelden">⏻</button>
       </div>
+      <button id="delete-account-btn" onclick="deleteAccount()" style="display:none;width:100%;margin:4px 0 2px;padding:5px 10px;font-family:'Inter',sans-serif;font-size:10px;font-weight:500;color:#dc2626;background:none;border:none;cursor:pointer;text-align:left;opacity:.7;transition:opacity .12s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.7">⊘ Konto &amp; Daten löschen</button>
+      <button onclick="openPrivacy()" style="width:100%;padding:4px 10px;font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;text-align:left;opacity:.6;transition:opacity .12s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.6">Datenschutz &amp; Impressum</button>
       <div class="lang-toggle">
         <button class="lang-seg active" id="lang-de" onclick="setLang('de')">DE</button>
         <span style="color:var(--muted-light);font-size:9px;opacity:.5">·</span>
@@ -2355,11 +2373,15 @@ function closeMobilePane() {
 })();
 
 /* ---- Auth ---- */
+async function hashPassword(pass) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 function getUsers() { return JSON.parse(localStorage.getItem('jm-users') || '[]'); }
 function saveUsers(u) { localStorage.setItem('jm-users', JSON.stringify(u)); }
-function getSession() { return JSON.parse(localStorage.getItem('jm-session') || 'null'); }
-function setSession(u) { localStorage.setItem('jm-session', JSON.stringify(u)); }
-function clearSession() { localStorage.removeItem('jm-session'); }
+function getSession() { return JSON.parse(sessionStorage.getItem('jm-session') || 'null'); }
+function setSession(u) { sessionStorage.setItem('jm-session', JSON.stringify(u)); }
+function clearSession() { sessionStorage.removeItem('jm-session'); }
 
 function initAuth() {
   const s = getSession();
@@ -2369,6 +2391,13 @@ function initAuth() {
   } else {
     document.getElementById('auth-overlay').classList.remove('hidden');
   }
+  // Show storage notice on first visit
+  if (!localStorage.getItem('jm-notice-ok')) {
+    setTimeout(() => {
+      const n = document.getElementById('storage-notice');
+      if (n) n.classList.remove('hide');
+    }, 2200);
+  }
 }
 
 function updateUserDisplay(user) {
@@ -2377,8 +2406,9 @@ function updateUserDisplay(user) {
   row.style.display = '';
   document.getElementById('auth-user-name').textContent = user.name || user.email;
   document.getElementById('auth-user-email').textContent = user.email;
-  const av = document.getElementById('auth-user-avatar');
-  av.textContent = (user.name || user.email).charAt(0).toUpperCase();
+  document.getElementById('auth-user-avatar').textContent = (user.name || user.email).charAt(0).toUpperCase();
+  const delBtn = document.getElementById('delete-account-btn');
+  if (delBtn) delBtn.style.display = '';
 }
 
 function switchAuthTab(tab) {
@@ -2395,18 +2425,21 @@ function showAuthError(msg) {
   el.classList.add('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('auth-login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('auth-login-pass').value;
   if (!email || !pass) { showAuthError('Bitte alle Felder ausfüllen.'); return; }
-  const user = getUsers().find(u => u.email === email && u.password === pass);
+  const hashed = await hashPassword(pass);
+  const users = getUsers();
+  const user = users.find(u => u.email === email && u.password === hashed);
   if (!user) { showAuthError('E-Mail oder Passwort falsch.'); return; }
-  setSession(user);
+  const safeUser = { name: user.name, email: user.email };
+  setSession(safeUser);
   document.getElementById('auth-overlay').classList.add('hidden');
-  updateUserDisplay(user);
+  updateUserDisplay(safeUser);
 }
 
-function doRegister() {
+async function doRegister() {
   const name  = document.getElementById('auth-reg-name').value.trim();
   const email = document.getElementById('auth-reg-email').value.trim().toLowerCase();
   const pass  = document.getElementById('auth-reg-pass').value;
@@ -2416,24 +2449,44 @@ function doRegister() {
   if (pass !== pass2) { showAuthError('Passwörter stimmen nicht überein.'); return; }
   const users = getUsers();
   if (users.find(u => u.email === email)) { showAuthError('Diese E-Mail ist bereits registriert.'); return; }
-  const newUser = { name, email, password: pass };
+  const hashed = await hashPassword(pass);
+  const newUser = { name, email, password: hashed };
   users.push(newUser);
   saveUsers(users);
-  setSession(newUser);
+  const safeUser = { name, email };
+  setSession(safeUser);
   document.getElementById('auth-overlay').classList.add('hidden');
-  updateUserDisplay(newUser);
+  updateUserDisplay(safeUser);
   toast('Willkommen, ' + name + '! ✓');
 }
 
 function logoutUser() {
   clearSession();
   document.getElementById('auth-user-row').style.display = 'none';
+  const delBtn = document.getElementById('delete-account-btn');
+  if (delBtn) delBtn.style.display = 'none';
   document.getElementById('auth-login-email').value = '';
   document.getElementById('auth-login-pass').value = '';
   document.getElementById('auth-error').classList.remove('show');
   switchAuthTab('login');
   document.getElementById('auth-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('auth-login-email').focus(), 100);
+}
+
+function deleteAccount() {
+  if (!confirm('Alle deine Daten (Konto, E-Mails, Einstellungen) werden unwiderruflich gelöscht. Fortfahren?')) return;
+  ['jm-users','jm-emails','jm-templates','jm-categories','jm-default-tpl','jm-accounts','jm-lang','jm-notice-ok'].forEach(k => localStorage.removeItem(k));
+  clearSession();
+  location.reload();
+}
+
+/* ---- Privacy & Storage Notice ---- */
+function openPrivacy() { document.getElementById('privacy-overlay').classList.remove('hidden'); }
+function closePrivacy() { document.getElementById('privacy-overlay').classList.add('hidden'); }
+function dismissNotice() {
+  localStorage.setItem('jm-notice-ok','1');
+  const n = document.getElementById('storage-notice');
+  n.classList.add('hide');
 }
 
 /* ---- Init ---- */
@@ -2448,6 +2501,53 @@ setTimeout(() => {
   s.addEventListener('transitionend', () => s.remove(), { once: true });
 }, 1800);
 </script>
+
+<!-- PRIVACY & IMPRESSUM MODAL -->
+<div id="privacy-overlay" class="hidden">
+  <div class="privacy-box glass">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 style="margin:0">Datenschutz &amp; Impressum</h2>
+      <button onclick="closePrivacy()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1">×</button>
+    </div>
+
+    <h3>Impressum</h3>
+    <p><strong>Jonathan Scheele</strong><br>
+    Enderstraße 94 · 01277 Dresden<br>
+    E-Mail: <a href="mailto:kontakt@jonathanscheele.de" style="color:inherit">kontakt@jonathanscheele.de</a><br>
+    USt-IdNr.: DE366728811</p>
+
+    <h3>Datenschutzerklärung (Art. 13 DSGVO)</h3>
+    <p>Diese Anwendung verarbeitet personenbezogene Daten ausschließlich lokal in deinem Browser. Es werden keine Daten an externe Server übermittelt oder gespeichert.</p>
+
+    <h3>Welche Daten werden gespeichert?</h3>
+    <ul>
+      <li><strong>Zugangsdaten:</strong> Name, E-Mail-Adresse und ein gehashtes Passwort (SHA-256) – ausschließlich im localStorage deines Browsers.</li>
+      <li><strong>E-Mails &amp; Entwürfe:</strong> Lokal im localStorage, nur auf deinem Gerät.</li>
+      <li><strong>Einstellungen:</strong> Sprache, Standard-Vorlage, Kategorien – lokal im localStorage.</li>
+      <li><strong>Session:</strong> Die aktive Anmeldung wird im sessionStorage gespeichert und beim Schließen des Tabs automatisch gelöscht.</li>
+    </ul>
+
+    <h3>Keine Drittanbieter</h3>
+    <p>Schriftarten werden über <strong>Bunny Fonts</strong> (EU-Server, Belgien) geladen – datenschutzkonform gemäß DSGVO, keine Weitergabe an Dritte.</p>
+
+    <h3>Deine Rechte (Art. 15–22 DSGVO)</h3>
+    <ul>
+      <li><strong>Auskunft &amp; Löschung:</strong> Du kannst unter „Konto &amp; Daten löschen" alle gespeicherten Daten sofort und vollständig entfernen.</li>
+      <li><strong>Berichtigung:</strong> Daten liegen ausschließlich lokal vor – du hast jederzeit vollständigen Zugriff über die Browser-Entwicklertools.</li>
+    </ul>
+
+    <h3>Kontakt</h3>
+    <p>Bei Fragen zum Datenschutz: <a href="mailto:kontakt@jonathanscheele.de" style="color:inherit">kontakt@jonathanscheele.de</a></p>
+
+    <p style="margin-top:18px;font-size:11px;color:var(--muted)">Stand: April 2026</p>
+  </div>
+</div>
+
+<!-- STORAGE NOTICE -->
+<div id="storage-notice" class="hide">
+  <p>Diese App speichert Daten <strong>nur lokal</strong> in deinem Browser (localStorage). Es werden keine Daten an Server übermittelt. <a onclick="openPrivacy()">Mehr erfahren</a></p>
+  <button class="notice-ok" onclick="dismissNotice()">OK</button>
+</div>
 
 <!-- Email Fullscreen Overlay -->
 <div class="email-fullscreen" id="email-fullscreen">
