@@ -32,7 +32,10 @@ export default {
       }
     }
 
-    return env.ASSETS.fetch(request);
+    const resp = await env.ASSETS.fetch(request);
+    const newHeaders = new Headers(resp.headers);
+    newHeaders.set('Cache-Control', 'no-store');
+    return new Response(resp.body, { status: resp.status, headers: newHeaders });
   }
 };
 
